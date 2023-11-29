@@ -2,6 +2,7 @@
  * 
  * A class containing various QoL utilities 
  * 
+ * 
  * Creation Date: 29/11/2023
  * Authors: C137
  * Original: C137
