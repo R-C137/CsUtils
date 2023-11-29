@@ -11,14 +11,23 @@
  * 
  * Changes: 
  *      [29/11/2023] - Initial implementation (C137)
+ *                   - Fixed a major bug in 'GetIndexesOf<T>(...)' which caused the first index to always be returned (C137)
  */
 using System;
 using System.Linq;
 
 namespace CsUtils
 {
+
     public static class StaticUtils
     {
+        public struct IndexFinder<T>
+        {
+            public T element;
+
+            public bool indexed;
+        }
+
         /// <summary>
         /// Returns the indexes of multiple elements from an array
         /// </summary>
@@ -31,11 +40,22 @@ namespace CsUtils
             if (!search.Any())
                 return null;
 
-            int[] result = new int[search.Count()];
+            //Use a custom array to allow the indexed arrays to be different and not indexed again
+            IndexFinder<T>[] finder = new IndexFinder<T>[array.Length];
 
-            for (int i = 0; i < search.Count(); i++)
+            //Setup the index finder with the proper values
+            for (int i = 0; i < array.Length; i++)
             {
-                result[i] = Array.IndexOf(array, search[i]);
+                finder[i].element = array[i];
+            }
+
+            int[] result = new int[finder.Length];
+
+            for (int i = 0; i < finder.Length; i++)
+            {
+                result[i] = Array.IndexOf(finder, new() { element = array[i] });
+
+                finder[result[i]] = new() { element = finder[result[i]].element, indexed = true};
             }
 
             return result;
