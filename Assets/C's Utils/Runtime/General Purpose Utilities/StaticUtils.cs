@@ -12,6 +12,9 @@
  * Changes: 
  *      [29/11/2023] - Initial implementation (C137)
  *                   - Fixed a major bug in 'GetIndexesOf<T>(...)' which caused the first index to always be returned (C137)
+ *                   
+ *      [30/11/2023] - Fixed a major bug in 'GetIndexesOf<T>(...)' which caused the function to not always returned the queried items (C137)
+ *                   - Renamed 'GetIndexesOf<T>(...)' parameter 'T[] search' into 'T[] query' (C137)
  */
 using System;
 using System.Linq;
@@ -33,11 +36,11 @@ namespace CsUtils
         /// </summary>
         /// <typeparam name="T">The type of the object and array to query</typeparam>
         /// <param name="array">The array in which the query shall be ran</param>
-        /// <param name="search">Array of the elements to search the index of</param>
+        /// <param name="query">Array of the elements to search the index of</param>
         /// <returns></returns>
-        public static int[] GetIndexesOf<T>(T[] array, T[] search)
+        public static int[] GetIndexesOf<T>(T[] array, T[] query)
         {
-            if (!search.Any())
+            if (!query.Any())
                 return null;
 
             //Use a custom array to allow the indexed arrays to be different and not indexed again
@@ -49,11 +52,11 @@ namespace CsUtils
                 finder[i].element = array[i];
             }
 
-            int[] result = new int[finder.Length];
+            int[] result = new int[query.Length];
 
-            for (int i = 0; i < finder.Length; i++)
+            for (int i = 0; i < query.Length; i++)
             {
-                result[i] = Array.IndexOf(finder, new() { element = array[i] });
+                result[i] = Array.IndexOf(finder, new() { element = query[i] });
 
                 finder[result[i]] = new() { element = finder[result[i]].element, indexed = true};
             }
