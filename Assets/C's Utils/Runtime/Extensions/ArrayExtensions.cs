@@ -11,6 +11,7 @@
  * 
  * Changes: 
  *      [29/11/2023] - Initial implementation (C137)
+ *      [03/12/2023] - Enumerable Formatting Utility (C137)
  */
 
 using System;
@@ -62,6 +63,17 @@ namespace CsUtils.Extensions
 
             return removedElement;
 
+        }
+
+        /// <summary>
+        /// Formats an en into a better string format by showing its contents
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="enumerable">The enumerable to format</param>
+        /// <returns></returns>
+        public static string Format<T>(this IEnumerable<T> enumerable)
+        {
+            return "{ " + string.Join(',', enumerable) + " }";
         }
     }
 }
