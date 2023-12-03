@@ -12,6 +12,7 @@
  * Changes: 
  *      [28/11/2023] - Initial implementation (C137)
  *      [29/11/2023] - Added proper namespace (C137)
+ *      [03/12/2023] - Log system support (C137)
  */
 using System.Collections;
 using System.Collections.Generic;
@@ -47,7 +48,7 @@ namespace CsUtils.UI
         {
             if (animatedText.gameObject != gameObject)
             {
-                Debug.LogWarning("The referenced 'animatedText' isn't on the same GameObject as the 'HoverSizing' script. Pointer events will not register properly", gameObject);
+                CsSettings.Logger.Log("The referenced 'animatedText' isn't on the same GameObject as the 'HoverSizing' script. Pointer events will not register properly", Systems.Logging.LogLevel.Warning, gameObject);
             }
         }
 

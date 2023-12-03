@@ -13,9 +13,9 @@
  * 
  * Changes: 
  *      [28/11/2023] - Initial implementation (C137)
+ *      [12/03/2023] - Log system support (C137)
+ *                   - Fixed StackOverflow error with new log system support (C137)
  */
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace CsUtils
@@ -29,17 +29,27 @@ namespace CsUtils
         {
             get
             {
-                return instance ??= FindObjectOfType<T>() ?? CreateNewInstance();
-
                 // Create a new instance of T if none is currently present
-                static T CreateNewInstance()
-                { 
+                if (instance == null && (instance = FindObjectOfType<T>()) == null)
+                {
                     var obj = new GameObject($"{typeof(T).Name} Singleton");
 
-                    Debug.LogWarning($"No instance of '{typeof(T).Name}' has been found. One has been created automatically", obj);
+                    instance = obj.AddComponent<T>();
 
-                   return obj.AddComponent<T>();
+                    CsSettings.Logger.Log($"No instance of '{typeof(T).Name}' has been found. One has been created automatically", Systems.Logging.LogLevel.Warning, obj);
                 }
+
+                return instance;
+
+                //// Create a new instance of T if none is currently present
+                //static T CreateNewInstance()
+                //{ 
+                //    var obj = new GameObject($"{typeof(T).Name} Singleton");
+
+                //    CsSettings.Logger.Log($"No instance of '{typeof(T).Name}' has been found. One has been created automatically", Systems.Logging.LogLevel.Warning, obj);
+
+                //    return obj.AddComponent<T>();
+                //}
             }
         }
 
@@ -54,7 +64,7 @@ namespace CsUtils
                 //Destroy component if an instance already exists
                 Destroy(this);
 
-                Debug.LogWarning($"Two or more instances of '{typeof(T).Name}' exist, a singleton should only have one instance. '{gameObject.name}.{typeof(T).Name}' has been destroyed", gameObject);
+                CsSettings.Logger.Log($"Two or more instances of '{typeof(T).Name}' exist, a singleton should only have one instance. '{gameObject.name}.{typeof(T).Name}' has been destroyed",Systems.Logging.LogLevel.Warning, gameObject);
             }
         }
     }
