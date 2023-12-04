@@ -11,11 +11,17 @@
  * 
  * Changes: 
  *      [03/12/2023] - Initial implementation (C137)
+ *      [04/12/2023] - File logging and compression support (C137)
  */
 using CsUtils.Extensions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace CsUtils.Systems.Logging
@@ -113,7 +119,7 @@ namespace CsUtils.Systems.Logging
     /// </summary>
     public interface ILogger
     {
-        public void Log(string log, LogLevel level, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.DateAndTime, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool stackTrace = true, bool colorCode = true, params object[] parameters);
+        public string Log(string log, LogLevel level, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.DateAndTime, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool stackTrace = true, bool colorCode = true, params object[] parameters);
 
     }
 
@@ -139,26 +145,129 @@ namespace CsUtils.Systems.Logging
         /// </summary>
         public bool doFileLogging = true;
 
-        public virtual void Log(string log, LogLevel level, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.DateAndTime, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool stackTrace = true, bool colorCode = true, params object[] parameters)
+        /// <summary>
+        /// The queue used to log any pending logs to file
+        /// </summary>
+        public Queue<string> logQueue = new();
+
+        /// <summary>
+        /// Whether the log file was successfully compressed
+        /// </summary>
+        public bool logFileCompressed = false;
+
+        /// <summary>
+        /// Whether the log file can still be compressed
+        /// </summary>
+        protected bool canCompressLog = true;
+
+        private void Start()
         {
-            if(forceShowInConsole || (level >= consoleLogLevel && doConsoleLogging))
+            CompressLogFile();
+        }
+
+        protected virtual void CompressLogFile(bool showError = true)
+        {
+            if (!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath)))
+                return;
+
+            if (!File.Exists(CsSettings.singleton.loggingFilePath))
+                return;
+
+            try
             {
-                LogToConsole($"<color={ColorUtility.ToHtmlStringRGBA(logColors.GetLevelColor((int)level))}>[{GetTimestamp()}] {FormatLog(log, parameters)}</color>", level);
+                using FileStream stream = File.Open(CsSettings.singleton.loggingFilePath, FileMode.Open, FileAccess.Read, FileShare.None);
+                stream.Close();
+            }
+            catch (IOException)
+            {
+                //the file is unavailable because it is:
+                //still being written to
+                //or being processed by another thread
+                //or does not exist (has already been processed)
+
+                //Manually log to file so as to avoid recursion
+                if (showError)
+                    LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogLevel.Error, writeToFile: false), true);
+                return;
             }
 
+
+            string zipFileName = DateTime.Now.ToString("dd-MM-yyyy");
+
+            int count = 0;
+            while (File.Exists(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath), zipFileName + ".zip")))
+            {
+                if (count == int.MaxValue)
+                {
+                    //Manually log to file so as to avoid recursion
+                    if (showError)
+                        LogToFile(Log("Could not create log zip archive. Archive name is already in use", LogLevel.Error, writeToFile: false), true);
+
+                    return;
+                }
+                zipFileName = DateTime.Now.ToString("dd-MM-yyyy") + $"-{count++}";
+            }
+
+            try
+            {
+                using (var zipArchive = ZipFile.Open(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath), zipFileName + ".zip"), ZipArchiveMode.Create))
+                {
+                    // Add the source file to the zip archive
+                    zipArchive.CreateEntryFromFile(CsSettings.singleton.loggingFilePath, Path.GetFileName(CsSettings.singleton.loggingFilePath));
+                }
+
+                logFileCompressed = true;
+            }
+            catch (IOException)
+            {
+                if (File.Exists(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath), zipFileName + ".zip")))
+                    File.Delete(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath), zipFileName + ".zip"));
+
+                //Manually log to file so as to avoid recursion
+                if(showError)
+                    LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogLevel.Error, writeToFile: false), true);
+            }
+
+        }
+
+        private void Update()
+        {
+            //Check if the queue contains any items to log. If so log them to file
+            if(logQueue.Any())
+            {
+                LogToFile(string.Empty);
+            }
+        }
+
+        public virtual string Log(string log, LogLevel level, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.DateAndTime, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool stackTrace = true, bool colorCode = true, params object[] parameters)
+        {
+            string actualLog = $"[{GetTimestamp()}] {(formatLog ? FormatLog(log, parameters) : log)}";
+
+            if(forceShowInConsole || (level >= consoleLogLevel && doConsoleLogging))
+            {
+
+                LogToConsole($"<color={ColorUtility.ToHtmlStringRGBA(logColors.GetLevelColor((int)level))}> {actualLog}</color>", level);
+
+                if(writeToFile)
+                    LogToFile(actualLog + "\n");
+            }
+
+            return actualLog;
+                
             string GetTimestamp()
             {
                 return timestamp switch
                 {
-                    Timestamp.DateAndTime => DateTime.Now.ToString("dd/MM/yyyy:HH:m:ss"),
-                    Timestamp.TimeAndDate => DateTime.Now.ToString("HH:m:ss:dd/MM/yyyy"),
+                    Timestamp.DateAndTime => DateTime.Now.ToString("dd/MM/yyyy-HH:m:ss"),
+                    Timestamp.TimeAndDate => DateTime.Now.ToString("HH:m:ss-dd/MM/yyyy"),
                     Timestamp.DateOnly => DateTime.Now.ToString("dd/MM/yyyy"),
-                    Timestamp.TimeOnly => DateTime.Now.ToString("HH:m:ss:"),
-                    _ => DateTime.Now.ToString("dd/MM/yyyy:HH:m:ss"),
+                    Timestamp.TimeOnly => DateTime.Now.ToString("HH:m:ss"),
+                    _ => DateTime.Now.ToString("dd/MM/yyyy-HH:m:ss"),
                 };
             }
         }
 
+        #region Logging Utilities
         /// <summary>
         /// Formats a log with the given parameters
         /// </summary>
@@ -195,6 +304,7 @@ namespace CsUtils.Systems.Logging
 
             return type.ToString();
         }
+        #endregion
 
         /// <summary>
         /// Shortcut to actually do the logging in the console with the proper unity log format
@@ -226,6 +336,50 @@ namespace CsUtils.Systems.Logging
                     Debug.LogError(log, context);
                     break;
             }
+        }
+
+        protected virtual void LogToFile(string log, bool skipCompressionCheck = false)
+        {
+            if (!logFileCompressed && !skipCompressionCheck)
+                CompressLogFile(false);
+
+            try
+            {
+                FileStream fs = GetLoggingFileStream();
+
+                //Log file can no longer be compressed as its contents have been overridden
+                canCompressLog = true;
+
+                string fullLog = string.Empty;
+
+                for (int i = 0; i < logQueue.Count; i++)
+                {
+                    fullLog += logQueue.Dequeue();
+                }
+
+                //Add the current log at the bottom since the queued ones were created before this one
+                fullLog += log;
+
+                byte[] bytes = Encoding.UTF8.GetBytes(fullLog);
+
+                fs.Seek(0, SeekOrigin.End);
+                fs.Write(bytes, 0, bytes.Length);
+                fs.Close();
+
+                logQueue.Clear();
+            }
+            catch(Exception)
+            {
+                logQueue.Enqueue(log);
+            }
+        }
+
+        protected virtual FileStream GetLoggingFileStream()
+        {
+            if(!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath));
+
+            return File.Open(CsSettings.singleton.loggingFilePath, FileMode.Create, FileAccess.ReadWrite);
         }
     }
 }

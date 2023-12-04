@@ -14,9 +14,12 @@
  *      [03/12/2023] - Initial implementation (C137)
  *                   - Logging system access shortcut (C137)
  *                   - Fixed null values always populating (C137)
+ *                   - Logging folder path support (C137)
  */
 
 using CsUtils.Systems.Logging;
+using System;
+using System.IO;
 
 namespace CsUtils
 {
@@ -26,6 +29,11 @@ namespace CsUtils
         /// What logger should C's Utilities use
         /// </summary>
         public ILogger logger;
+
+        /// <summary>
+        /// Where should the logging folder be found
+        /// </summary>
+        public string loggingFilePath;
 
         /// <summary>
         /// Shortcut to access the logger
@@ -45,6 +53,9 @@ namespace CsUtils
                 return;
 
             logger ??= Logging.singleton;
+
+            if(string.IsNullOrEmpty(loggingFilePath))
+                loggingFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), UnityEngine.Application.companyName, UnityEngine.Application.productName, "Logging", "latest.log");
         }
     }
 }

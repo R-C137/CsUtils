@@ -9,8 +9,8 @@ public class LogTest : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        int[] test = { 1, 2, 3, 5};
-        Logging.singleton.Log("Logging test passed. Testing with int data {0}", LogLevel.Info, parameters: test);
+        //int[] test = { 1, 2, 3, 5};
+        //Logging.singleton.Log("Logging test passed. Testing with int data {0}", LogLevel.Info, parameters: test);
 
     }
 
