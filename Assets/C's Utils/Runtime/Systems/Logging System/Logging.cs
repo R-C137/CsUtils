@@ -12,6 +12,12 @@
  * Changes: 
  *      [03/12/2023] - Initial implementation (C137)
  *      [04/12/2023] - File logging and compression support (C137)
+ *      
+ *      [05/12/2023] - Stack trace support (C137)
+ *                   - Attribute support to hide a method from the logging stack trace (C137)
+ *                   - Fixed logging file being overridden at each log (C137)
+ *                   - Logging file is now overridden only at the first log (C137)
+ *                   - Log level is now shown in the log (C137)
  */
 using CsUtils.Extensions;
 using System;
@@ -26,6 +32,9 @@ using UnityEngine;
 
 namespace CsUtils.Systems.Logging
 {
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public class HideFromStackTraceAttribute : Attribute { }
+
     /// <summary>
     /// All of the available log levels
     /// </summary>
@@ -119,7 +128,7 @@ namespace CsUtils.Systems.Logging
     /// </summary>
     public interface ILogger
     {
-        public string Log(string log, LogLevel level, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.DateAndTime, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool stackTrace = true, bool colorCode = true, params object[] parameters);
+        public string Log(string log, LogLevel level, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool forceStackTrace = true, bool colorCode = true, params object[] parameters);
 
     }
 
@@ -239,17 +248,32 @@ namespace CsUtils.Systems.Logging
             }
         }
 
-        public virtual string Log(string log, LogLevel level, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.DateAndTime, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool stackTrace = true, bool colorCode = true, params object[] parameters)
-        {
-            string actualLog = $"[{GetTimestamp()}] {(formatLog ? FormatLog(log, parameters) : log)}";
+        [HideInCallstack, HideFromStackTrace]
+        public virtual string Log(string log, LogLevel level, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool forceStackTrace = true, bool colorCode = true, params object[] parameters)
+        { 
+            string timeStampValue = $"[{GetTimestamp()}]";
+            string actualLog = $"{timeStampValue} [{Enum.GetName(typeof(LogLevel), level)}] {(formatLog ? FormatLog(log, parameters) : log)}";
 
             if(forceShowInConsole || (level >= consoleLogLevel && doConsoleLogging))
             {
-
                 LogToConsole($"<color={ColorUtility.ToHtmlStringRGBA(logColors.GetLevelColor((int)level))}> {actualLog}</color>", level);
 
-                if(writeToFile)
-                    LogToFile(actualLog + "\n");
+                if (writeToFile)
+                {
+                    string fileLog = actualLog;
+                    if(forceShowInConsole || level >= LogLevel.Error) 
+                    {
+                        string stackTrace =
+                                StaticUtils.BreakAndIndent(GetStackTrace()
+                                            .Remove(0, 2) /*Removes the whitespace that the stack trace trace produces for some reason*/
+                                            .Replace("C's Utils", "C's-Utils")/*Prevents the indenter from indenting the file path as it contains a space*/,
+                                            timeStampValue.Length + 4, 200) /*Indent according to the stack trace*/;
+
+                        fileLog += "\n" + StaticUtils.BreakAndIndent(GetStackTrace().Remove(0, 2).Replace("C's Utils", "C's-Utils")/*Replace*/, timeStampValue.Length + 4, 100);
+                    }
+
+                    LogToFile(fileLog + "\n");
+                }
             }
 
             return actualLog;
@@ -264,6 +288,17 @@ namespace CsUtils.Systems.Logging
                     Timestamp.TimeOnly => DateTime.Now.ToString("HH:m:ss"),
                     _ => DateTime.Now.ToString("dd/MM/yyyy-HH:m:ss"),
                 };
+            }
+
+            [HideInCallstack, HideFromStackTrace]
+            string GetStackTrace()
+            {
+                return 
+                    string.Concat(new System.Diagnostics.StackTrace(true)
+                                    .GetFrames()
+                                    .Where(frame => !frame.GetMethod().ShouldHideFromStackTrace())
+                                    .Select(frame => new System.Diagnostics.StackTrace(frame).ToString())
+                                    .ToArray());
             }
         }
 
@@ -340,7 +375,7 @@ namespace CsUtils.Systems.Logging
 
         protected virtual void LogToFile(string log, bool skipCompressionCheck = false)
         {
-            if (!logFileCompressed && !skipCompressionCheck)
+            if (canCompressLog && !logFileCompressed && !skipCompressionCheck)
                 CompressLogFile(false);
 
             try
@@ -348,7 +383,7 @@ namespace CsUtils.Systems.Logging
                 FileStream fs = GetLoggingFileStream();
 
                 //Log file can no longer be compressed as its contents have been overridden
-                canCompressLog = true;
+                canCompressLog = false;
 
                 string fullLog = string.Empty;
 
@@ -379,7 +414,10 @@ namespace CsUtils.Systems.Logging
             if(!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath)))
                 Directory.CreateDirectory(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath));
 
-            return File.Open(CsSettings.singleton.loggingFilePath, FileMode.Create, FileAccess.ReadWrite);
+            if (File.Exists(CsSettings.singleton.loggingFilePath) && canCompressLog)
+                    return File.Open(CsSettings.singleton.loggingFilePath, FileMode.Create, FileAccess.ReadWrite);
+
+            return File.Open(CsSettings.singleton.loggingFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
         }
     }
 }
