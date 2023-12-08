@@ -17,6 +17,11 @@
  *                   - Renamed 'GetIndexesOf<T>(...)' parameter 'T[] search' into 'T[] query' (C137)
  *                   
  *      [05/12/2023] - Added an extension to check if a method should be shown in the stack trace [This extension won't have it's own script as its a few methods] (C137)
+ *      
+ *      [08/12/2023] - Added missing summaries (C137)
+ *                   - Added support for weighted randomness (C137)
+ *                   - Moved string extensions to it's own namespace (C137)
+ *                   - Updated accessibility of IndexFinder<T> (C137)
  */
 using CsUtils.Systems.Logging;
 using System;
@@ -27,14 +32,29 @@ using System.Text;
 
 namespace CsUtils
 {
+    [Serializable]
+    public struct WeightedNumber
+    {
+        /// <summary>
+        /// The number that will be returned
+        /// </summary>
+        public int number;
+
+        /// <summary>
+        /// The probability of that number to be returned
+        /// </summary>
+        public float probability;
+    }
+
     public static class StaticUtils
     {
-        public struct IndexFinder<T>
+        private struct IndexFinder<T>
         {
             public T element;
 
             public bool indexed;
         }
+
 
         /// <summary>
         /// Returns the indexes of multiple elements from an array
@@ -69,28 +89,39 @@ namespace CsUtils
             return result;
         }
 
-        public static string BreakAndIndent(string input, int indent, int maxLength)
+        /// <summary>
+        /// Returns a number based on a probability
+        /// </summary>
+        /// <param name="weightedNumbers">The numbers and probabilities</param>
+        /// <returns></returns>
+        public static int WeightedRandom(params WeightedNumber[] weightedNumbers)
         {
-            StringBuilder result = new();
-            string indentation = new(' ', indent);
-
-            while (input.Length > maxLength)
+            //Get total probability
+            float totalProbability = 0;
+            foreach (var number in weightedNumbers)
             {
-                string line = input[..maxLength];
-                int lastSpace = line.LastIndexOf(' ');
-
-                if (lastSpace > 0)
-                {
-                    line = line[..lastSpace];
-                }
-
-                result.AppendLine(indentation + line);
-                input = input[line.Length..].TrimStart();
+                totalProbability += number.probability;
             }
 
-            result.AppendLine(indentation + input);
+            //Normalize probabilities
+            for (int i = 0; i < weightedNumbers.Length; i++)
+            {
+                weightedNumbers[i].probability /= totalProbability;
+            }
 
-            return result.ToString();
+            float randomPoint = UnityEngine.Random.value;
+            for (int i = 0; i < weightedNumbers.Length; i++)
+            {
+                if (randomPoint < weightedNumbers[i].probability)
+                {
+                    return weightedNumbers[i].number;
+                }
+                else
+                {
+                    randomPoint -= weightedNumbers[i].probability;
+                }
+            }
+            return weightedNumbers[^1].number;
         }
     }
 }
@@ -116,5 +147,39 @@ namespace CsUtils.Extensions
                     .Select(frame => new StackTrace(frame).ToString())
                     .ToArray());  // ^^^^^^^^^^^^^^^     ^
         }                         // required because you want the usual stack trace
+    }
+
+    public static class StringExtensions
+    {
+        /// <summary>
+        /// Breaks and indents a string
+        /// </summary>
+        /// <param name="input">The string affected</param>
+        /// <param name="indent">How much should each line be indented</param>
+        /// <param name="maxLength">The maximum length of a line (excluding indent)</param>
+        /// <returns></returns>
+        public static string BreakAndIndent(this string input, int indent, int maxLength)
+        {
+            StringBuilder result = new();
+            string indentation = new(' ', indent);
+
+            while (input.Length > maxLength)
+            {
+                string line = input[..maxLength];
+                int lastSpace = line.LastIndexOf(' ');
+
+                if (lastSpace > 0)
+                {
+                    line = line[..lastSpace];
+                }
+
+                result.AppendLine(indentation + line);
+                input = input[line.Length..].TrimStart();
+            }
+
+            result.AppendLine(indentation + input);
+
+            return result.ToString();
+        }
     }
 }

@@ -484,6 +484,7 @@ GameObject:
   - component: {fileID: 700561482}
   - component: {fileID: 700561484}
   - component: {fileID: 700561485}
+  - component: {fileID: 700561486}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Player
@@ -611,6 +612,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0128f5514a4a9444baf5a3bda260e07b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &700561486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700561477}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ef4f3da0ca3f6042bc4ef0d0ac820ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  weight:
+  - number: 1
+    probability: 0.01829268
+  - number: 2
+    probability: 0.006097561
+  - number: 8
+    probability: 0.2926829
+  - number: 12
+    probability: 0.6829268
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -963,10 +985,10 @@ MonoBehaviour:
   backgroundFader: {fileID: 32277940}
   loadingBarFader: {fileID: 900216091}
   loadingBarSlider: {fileID: 900216090}
+  loadingBarDisplayTimeout: 1.5
   loadingDelay: 5
   fadeInTime: 0.5
   fadeOutTIme: 0.5
-  fadingTween: 0
 --- !u!1 &1124663507
 GameObject:
   m_ObjectHideFlags: 0
@@ -1097,7 +1119,6 @@ MonoBehaviour:
   loop: 1
   delay: 0
   animatedText: {fileID: 1323153711}
-  currentIndex: 0
 --- !u!114 &1323153711
 MonoBehaviour:
   m_ObjectHideFlags: 0

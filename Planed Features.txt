@@ -4,7 +4,7 @@ Simple Day/Night System
 
 Simple Weather system
 
-Weighted randomness
+Weighted randomness--
 
 Data saving system
 	Game Settings system

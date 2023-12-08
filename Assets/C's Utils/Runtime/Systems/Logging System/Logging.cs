@@ -18,6 +18,9 @@
  *                   - Fixed logging file being overridden at each log (C137)
  *                   - Logging file is now overridden only at the first log (C137)
  *                   - Log level is now shown in the log (C137)
+ *    
+ *      [08/12/2023] - Improved stack trace handling (C137)
+ *                   - Added compatibility new new intendation system (C137)
  */
 using CsUtils.Extensions;
 using System;
@@ -264,12 +267,12 @@ namespace CsUtils.Systems.Logging
                     if(forceShowInConsole || level >= LogLevel.Error) 
                     {
                         string stackTrace =
-                                StaticUtils.BreakAndIndent(GetStackTrace()
+                                GetStackTrace()
                                             .Remove(0, 2) /*Removes the whitespace that the stack trace trace produces for some reason*/
-                                            .Replace("C's Utils", "C's-Utils")/*Prevents the indenter from indenting the file path as it contains a space*/,
-                                            timeStampValue.Length + 4, 200) /*Indent according to the stack trace*/;
+                                            .Replace("C's Utils", "C's-Utils") /*Prevents the indenter from indenting the file path as it contains a space*/
+                                            .BreakAndIndent(timeStampValue.Length + 4, 200) /*Indent according to the stack trace*/;
 
-                        fileLog += "\n" + StaticUtils.BreakAndIndent(GetStackTrace().Remove(0, 2).Replace("C's Utils", "C's-Utils")/*Replace*/, timeStampValue.Length + 4, 100);
+                        fileLog += "\n" + stackTrace;
                     }
 
                     LogToFile(fileLog + "\n");
