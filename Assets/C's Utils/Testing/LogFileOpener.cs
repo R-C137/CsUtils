@@ -12,7 +12,7 @@ public class LogFileOpener : MonoBehaviour
     {
         //fs = File.Open(CsSettings.singleton.loggingFilePath, FileMode.Open, FileAccess.ReadWrite);
         int[] test = { 1, 2, 3, 5 };
-        Logging.singleton.Log("Logging test passed. Testing with int data {0}", LogLevel.Info, forceStackTrace: true, parameters: test);
+        Logging.singleton.Log("Logging test passed. Testing with int data {0}", LogSeverity.Info, parameters: test);
     }
 
     // Update is called once per frame
@@ -20,7 +20,7 @@ public class LogFileOpener : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.L))
         {
-            Logging.singleton.Log("Some error happened", LogLevel.Error);
+            Logging.singleton.Log("Some error happened", LogSeverity.Error);
         }
     }
 }

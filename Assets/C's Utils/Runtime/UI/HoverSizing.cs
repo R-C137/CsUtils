@@ -13,9 +13,10 @@
  *      [28/11/2023] - Initial implementation (C137)
  *      [29/11/2023] - Added proper namespace (C137)
  *      [03/12/2023] - Log system support (C137)
+ *      [09/12/2023] - Default value are now properly set (C137)
+ *                   - Removed unnecessary using statements (C137)
  */
-using System.Collections;
-using System.Collections.Generic;
+using CsUtils.Systems.Logging;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -48,13 +49,13 @@ namespace CsUtils.UI
         {
             if (animatedText.gameObject != gameObject)
             {
-                CsSettings.Logger.Log("The referenced 'animatedText' isn't on the same GameObject as the 'HoverSizing' script. Pointer events will not register properly", Systems.Logging.LogLevel.Warning, gameObject);
+                CsSettings.Logger.Log("The referenced 'animatedText' isn't on the same GameObject as the 'HoverSizing' script. Pointer events will not register properly", LogSeverity.Warning, gameObject);
             }
         }
 
         private void Reset()
         {
-            animatedText = animatedText == null ? transform.GetComponent<TMP_Text>() : animatedText;
+            transform.TryGetComponent(out animatedText);
         }
 
         public void OnPointerExit(PointerEventData eventData)

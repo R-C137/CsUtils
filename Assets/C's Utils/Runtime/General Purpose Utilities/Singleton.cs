@@ -36,7 +36,7 @@ namespace CsUtils
 
                     instance = obj.AddComponent<T>();
 
-                    CsSettings.Logger.Log($"No instance of '{typeof(T).Name}' has been found. One has been created automatically", Systems.Logging.LogLevel.Warning, obj);
+                    CsSettings.Logger.Log($"No instance of '{typeof(T).Name}' has been found. One has been created automatically", Systems.Logging.LogSeverity.Warning, obj);
                 }
 
                 return instance;
@@ -64,7 +64,7 @@ namespace CsUtils
                 //Destroy component if an instance already exists
                 Destroy(this);
 
-                CsSettings.Logger.Log($"Two or more instances of '{typeof(T).Name}' exist, a singleton should only have one instance. '{gameObject.name}.{typeof(T).Name}' has been destroyed",Systems.Logging.LogLevel.Warning, gameObject);
+                CsSettings.Logger.Log($"Two or more instances of '{typeof(T).Name}' exist, a singleton should only have one instance. '{gameObject.name}.{typeof(T).Name}' has been destroyed",Systems.Logging.LogSeverity.Warning, gameObject);
             }
         }
     }

@@ -22,6 +22,8 @@
  *                   - Added support for weighted randomness (C137)
  *                   - Moved string extensions to it's own namespace (C137)
  *                   - Updated accessibility of IndexFinder<T> (C137)
+ *     
+ *      [09/12/2023] - Added support for convert hexadecimal colors into RGB(A) colors (C137)
  */
 using CsUtils.Systems.Logging;
 using System;
@@ -29,6 +31,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using UnityEngine;
 
 namespace CsUtils
 {
@@ -123,6 +126,19 @@ namespace CsUtils
             }
             return weightedNumbers[^1].number;
         }
+
+        /// <summary>
+        /// Converts a hexadecimal color to an RGB(A) color
+        /// </summary>
+        /// <param name="hex">The hexadecimal color to convert</param>
+        /// <returns></returns>
+        public static Color FromHex(string hex)
+        {
+            ColorUtility.TryParseHtmlString(hex, out Color result);
+
+            return result;
+        }
+
     }
 }
 

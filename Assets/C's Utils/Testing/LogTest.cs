@@ -1,3 +1,4 @@
+using CsUtils;
 using CsUtils.Systems.Logging;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,9 +15,40 @@ public class LogTest : MonoBehaviour
 
     }
 
-    // Update is called once per frame
-    void Update()
+    [ContextMenu("Debug Log")]
+    public void LogDebug()
     {
-        
+        CsSettings.singleton.logger.Log("Debug Log", LogSeverity.Debug);
+    }
+
+    [ContextMenu("Log Info")]
+    public void LogInfo()
+    {
+        CsSettings.singleton.logger.Log("Info Log", LogSeverity.Info);
+    }
+
+    [ContextMenu("Log Warning")]
+    public void LogWarning()
+    {
+        CsSettings.singleton.logger.Log("Warning Log", LogSeverity.Warning);
+    }
+
+    [ContextMenu("Log Error")]
+    public void LogError()
+    {
+        CsSettings.singleton.logger.Log("Error Log", LogSeverity.Error);
+    }
+
+    [ContextMenu("Log Fatal")]
+    public void LogFatal()
+    {
+        CsSettings.singleton.logger.Log("Fatal Log", LogSeverity.Fatal);
+    }
+
+    // Update is called once per frame
+    [ContextMenu("Throw Error")]
+    public void ThrowError()
+    {
+        throw new System.Exception();
     }
 }

@@ -20,7 +20,16 @@
  *                   - Log level is now shown in the log (C137)
  *    
  *      [08/12/2023] - Improved stack trace handling (C137)
- *                   - Added compatibility new new intendation system (C137)
+ *                   - Added compatibility new new indentation system (C137)
+ *      
+ *      [09/12/2023] - Added automatic error logging (C137)
+ *                   - Log colors are now serialized in the inspector
+ *                   - Default log colors addition (C137)
+ *                   - Removed timestamp from console logs (C137)
+ *                   - Timestamp is now optional (C137)
+ *                   - Moved queue check from Update() to FixedUpdate() to ignore the timescale (C137)
+ *                   - Moved queue logging from a queue to a string (C137)
+ *                   - Fixed bug where console logging had to be enabled to do file logging (C137)
  */
 using CsUtils.Extensions;
 using System;
@@ -30,7 +39,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace CsUtils.Systems.Logging
@@ -41,7 +49,7 @@ namespace CsUtils.Systems.Logging
     /// <summary>
     /// All of the available log levels
     /// </summary>
-    public enum LogLevel
+    public enum LogSeverity
     {
         Debug = 0,
         Info = 1,
@@ -58,12 +66,14 @@ namespace CsUtils.Systems.Logging
         DateAndTime,
         TimeAndDate,
         DateOnly,
-        TimeOnly
+        TimeOnly,
+        None
     }
 
     /// <summary>
     /// Contains data for how the different log levels should be color-coded
     /// </summary>
+    [Serializable]
     public struct LogColors
     {
         /// <summary>
@@ -118,7 +128,7 @@ namespace CsUtils.Systems.Logging
         /// <summary>
         /// The level of the log (How important it is)
         /// </summary>
-        public LogLevel level;
+        public LogSeverity level;
 
         /// <summary>
         /// The stack trace from which the log originates
@@ -131,7 +141,7 @@ namespace CsUtils.Systems.Logging
     /// </summary>
     public interface ILogger
     {
-        public string Log(string log, LogLevel level, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool forceStackTrace = true, bool colorCode = true, params object[] parameters);
+        public string Log(string log, LogSeverity level, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool forceStackTrace = false, string customStackTrace = null, params object[] parameters);
 
     }
 
@@ -145,7 +155,7 @@ namespace CsUtils.Systems.Logging
         /// <summary>
         /// The log level which will be displayed to the console
         /// </summary>
-        public LogLevel consoleLogLevel = LogLevel.Info;
+        public LogSeverity consoleLogLevel = LogSeverity.Info;
 
         /// <summary>
         /// Whether to do console logging, can be forced despite this value
@@ -158,9 +168,14 @@ namespace CsUtils.Systems.Logging
         public bool doFileLogging = true;
 
         /// <summary>
-        /// The queue used to log any pending logs to file
+        /// Whether to automatically log exceptions
         /// </summary>
-        public Queue<string> logQueue = new();
+        public bool doExceptionLogging = true;
+
+        /// <summary>
+        /// The previous logs awaiting to be logged
+        /// </summary>
+        public string previousLog;
 
         /// <summary>
         /// Whether the log file was successfully compressed
@@ -175,8 +190,22 @@ namespace CsUtils.Systems.Logging
         private void Start()
         {
             CompressLogFile();
+
+            if(doExceptionLogging)
+                Application.logMessageReceived += HandleErrors;
+        }
+        protected virtual void HandleErrors(string condition, string stackTrace, LogType type)
+        {
+            if(type == LogType.Exception)
+            {
+                Log(condition.Remove(0,11), LogSeverity.Fatal, stackTrace: stackTrace, forceShowInConsole: true);
+            }
         }
 
+        /// <summary>
+        /// Compresses the latest log file so as to save space
+        /// </summary>
+        /// <param name="showError">Whether to debug any errors that occur(internal use only)</param>
         protected virtual void CompressLogFile(bool showError = true)
         {
             if (!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath)))
@@ -199,7 +228,7 @@ namespace CsUtils.Systems.Logging
 
                 //Manually log to file so as to avoid recursion
                 if (showError)
-                    LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogLevel.Error, writeToFile: false), true);
+                    LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogSeverity.Error, writeToFile: false), true);
                 return;
             }
 
@@ -213,7 +242,7 @@ namespace CsUtils.Systems.Logging
                 {
                     //Manually log to file so as to avoid recursion
                     if (showError)
-                        LogToFile(Log("Could not create log zip archive. Archive name is already in use", LogLevel.Error, writeToFile: false), true);
+                        LogToFile(Log("Could not create log zip archive. Archive name is already in use", LogSeverity.Error, writeToFile: false), true);
 
                     return;
                 }
@@ -237,49 +266,66 @@ namespace CsUtils.Systems.Logging
 
                 //Manually log to file so as to avoid recursion
                 if(showError)
-                    LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogLevel.Error, writeToFile: false), true);
+                    LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogSeverity.Error, writeToFile: false), true);
             }
 
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             //Check if the queue contains any items to log. If so log them to file
-            if(logQueue.Any())
+            if(previousLog.Any())
             {
                 LogToFile(string.Empty);
             }
         }
 
+        /// <summary>
+        /// Logs a given value to the console and to a file
+        /// </summary>
+        /// <param name="log">The value to log</param>
+        /// <param name="severity">The severity of the log</param>
+        /// <param name="context">The context in which to display the log</param>
+        /// <param name="timestamp">How the timestamp should be displayed</param>
+        /// <param name="formatLog">Whether to format the log before displaying it</param>
+        /// <param name="forceShowInConsole">Whether to ignore the console log level and forcefully display the log</param>
+        /// <param name="writeToFile">Whether to log this value to a file</param>
+        /// <param name="forceStackTrace">Whether to display a stacktrace, ignoring the log severity</param>
+        /// <param name="stackTrace">The stacktrace to use, set to null to automatically evaluate it</param>
+        /// <param name="parameters">The parameters to format the log with, if formatting is allowed</param>
+        /// <returns>The log that was(or should have been) written to the log file</returns>
         [HideInCallstack, HideFromStackTrace]
-        public virtual string Log(string log, LogLevel level, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool forceStackTrace = true, bool colorCode = true, params object[] parameters)
+        public virtual string Log(string log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool forceStackTrace = false, string stackTrace = null, params object[] parameters)
         { 
             string timeStampValue = $"[{GetTimestamp()}]";
-            string actualLog = $"{timeStampValue} [{Enum.GetName(typeof(LogLevel), level)}] {(formatLog ? FormatLog(log, parameters) : log)}";
+            string formattedLog = $"[{Enum.GetName(typeof(LogSeverity), severity)}] {(formatLog ? FormatLog(log, parameters) : log)}";
+            string timeStampedLog = $"{timeStampValue} {formattedLog}";
 
-            if(forceShowInConsole || (level >= consoleLogLevel && doConsoleLogging))
+            if(forceShowInConsole || (severity >= consoleLogLevel && doConsoleLogging))
             {
-                LogToConsole($"<color={ColorUtility.ToHtmlStringRGBA(logColors.GetLevelColor((int)level))}> {actualLog}</color>", level);
+                Debug.Log(ColorUtility.ToHtmlStringRGB(logColors.GetLevelColor((int)severity)));
+                LogToConsole($"<color=#{ColorUtility.ToHtmlStringRGB(logColors.GetLevelColor((int)severity))}> {formattedLog}</color>", severity);
 
-                if (writeToFile)
-                {
-                    string fileLog = actualLog;
-                    if(forceShowInConsole || level >= LogLevel.Error) 
-                    {
-                        string stackTrace =
-                                GetStackTrace()
-                                            .Remove(0, 2) /*Removes the whitespace that the stack trace trace produces for some reason*/
-                                            .Replace("C's Utils", "C's-Utils") /*Prevents the indenter from indenting the file path as it contains a space*/
-                                            .BreakAndIndent(timeStampValue.Length + 4, 200) /*Indent according to the stack trace*/;
-
-                        fileLog += "\n" + stackTrace;
-                    }
-
-                    LogToFile(fileLog + "\n");
-                }
+                
             }
 
-            return actualLog;
+            if (writeToFile)
+            {
+                string fileLog = timeStampedLog;
+                if (forceStackTrace || severity >= LogSeverity.Error)
+                {
+                    stackTrace =
+                            (stackTrace ?? GetStackTrace())
+                                        .Replace("C's Utils", "C's-Utils") /*Prevents the indenter from indenting the file path as it contains a space*/
+                                        .BreakAndIndent(timeStampValue.Length + 4, 200) /*Indent according to the stack trace*/;
+
+                    fileLog += "\n" + stackTrace[..^2]; //Remove the break line added by the stack trace for some reason
+                }
+
+                LogToFile(fileLog + "\n");
+            }
+
+            return formattedLog;
                 
             string GetTimestamp()
             {
@@ -289,6 +335,7 @@ namespace CsUtils.Systems.Logging
                     Timestamp.TimeAndDate => DateTime.Now.ToString("HH:m:ss-dd/MM/yyyy"),
                     Timestamp.DateOnly => DateTime.Now.ToString("dd/MM/yyyy"),
                     Timestamp.TimeOnly => DateTime.Now.ToString("HH:m:ss"),
+                    Timestamp.None => "",
                     _ => DateTime.Now.ToString("dd/MM/yyyy-HH:m:ss"),
                 };
             }
@@ -296,12 +343,12 @@ namespace CsUtils.Systems.Logging
             [HideInCallstack, HideFromStackTrace]
             string GetStackTrace()
             {
-                return 
+                return
                     string.Concat(new System.Diagnostics.StackTrace(true)
                                     .GetFrames()
                                     .Where(frame => !frame.GetMethod().ShouldHideFromStackTrace())
                                     .Select(frame => new System.Diagnostics.StackTrace(frame).ToString())
-                                    .ToArray());
+                                    .ToArray()).Remove(0, 2);/*Removes the whitespace that the stack trace trace produces for some reason*/
             }
         }
 
@@ -350,32 +397,37 @@ namespace CsUtils.Systems.Logging
         /// <param name="log">The log to log</param>
         /// <param name="level">The log level</param>
         /// <param name="context">The context if any</param>
-        protected virtual void LogToConsole(string log, LogLevel level, UnityEngine.Object context = null)
+        protected virtual void LogToConsole(string log, LogSeverity level, UnityEngine.Object context = null)
         {
             switch (level)
             {
-                case LogLevel.Debug:
+                case LogSeverity.Debug:
                     Debug.Log(log, context); 
                     break;
 
-                case LogLevel.Info:
+                case LogSeverity.Info:
                     Debug.Log(log, context);
                     break;
 
-                case LogLevel.Warning:
+                case LogSeverity.Warning:
                     Debug.LogWarning(log, context);
                     break;
 
-                case LogLevel.Error:
+                case LogSeverity.Error:
                     Debug.LogError(log, context);
                     break;
 
-                case LogLevel.Fatal:
+                case LogSeverity.Fatal:
                     Debug.LogError(log, context);
                     break;
             }
         }
 
+        /// <summary>
+        /// Handles the file logging
+        /// </summary>
+        /// <param name="log">The value to log</param>
+        /// <param name="skipCompressionCheck">Whether the file’s compressibility should be skipped</param>
         protected virtual void LogToFile(string log, bool skipCompressionCheck = false)
         {
             if (canCompressLog && !logFileCompressed && !skipCompressionCheck)
@@ -390,10 +442,8 @@ namespace CsUtils.Systems.Logging
 
                 string fullLog = string.Empty;
 
-                for (int i = 0; i < logQueue.Count; i++)
-                {
-                    fullLog += logQueue.Dequeue();
-                }
+                if (!string.IsNullOrEmpty(previousLog))
+                    fullLog += previousLog;
 
                 //Add the current log at the bottom since the queued ones were created before this one
                 fullLog += log;
@@ -404,14 +454,18 @@ namespace CsUtils.Systems.Logging
                 fs.Write(bytes, 0, bytes.Length);
                 fs.Close();
 
-                logQueue.Clear();
+                previousLog = null;
             }
             catch(Exception)
             {
-                logQueue.Enqueue(log);
+                previousLog += log;
             }
         }
 
+        /// <summary>
+        /// Gets the file stream used for file loggings
+        /// </summary>
+        /// <returns></returns>
         protected virtual FileStream GetLoggingFileStream()
         {
             if(!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath)))
@@ -421,6 +475,21 @@ namespace CsUtils.Systems.Logging
                     return File.Open(CsSettings.singleton.loggingFilePath, FileMode.Create, FileAccess.ReadWrite);
 
             return File.Open(CsSettings.singleton.loggingFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+        }
+
+        /// <summary>
+        /// Properly set the default values
+        /// </summary>
+        protected virtual void Reset()
+        {
+            logColors = new LogColors()
+            {
+                debug = StaticUtils.FromHex("A6A6A6"),
+                info = StaticUtils.FromHex("FBF6EE"),
+                warning = StaticUtils.FromHex("EEC759"),
+                error = StaticUtils.FromHex("EF4040"),
+                fatal = StaticUtils.FromHex("C70039")
+            };
         }
     }
 }

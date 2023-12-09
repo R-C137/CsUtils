@@ -12,6 +12,6 @@ public class RandomWithWeight : MonoBehaviour
     [ContextMenu("Get Random")]
     public void GetRandom()
     {
-        Logging.singleton.Log("Random weight generated got {0}", LogLevel.Info, writeToFile: false, parameters: StaticUtils.WeightedRandom(weight));
+        Logging.singleton.Log("Random weight generated got {0}", LogSeverity.Info, writeToFile: false, parameters: StaticUtils.WeightedRandom(weight));
     }
 }

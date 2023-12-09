@@ -8,3 +8,5 @@ Weighted randomness--
 
 Data saving system
 	Game Settings system
+
+Localization System

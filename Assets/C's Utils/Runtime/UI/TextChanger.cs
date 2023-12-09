@@ -11,10 +11,10 @@
  * 
  * Changes: 
  *      [06/12/2023] - Initial implementation (C137)
+ *      [09/12/2023] - Removed unnecessary using statements (C137)
  */
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 

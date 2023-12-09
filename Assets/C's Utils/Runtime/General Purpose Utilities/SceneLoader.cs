@@ -11,12 +11,12 @@
  * 
  * Changes: 
  *      [06/12/2023] - Initial implementation (C137)
+ *      [09/12/2023] - Removed unnecessary using statements (C137)
  */
 using CsUtils;
 using CsUtils.UI;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -83,7 +83,7 @@ public class SceneLoader : MonoBehaviour
         if (!isLoading)
             StartCoroutine(LoadSceneAsync(sceneBuildIndex, parameters));
         else
-            CsSettings.Logger.Log("[SceneLoader] Cannot load scene with ID:{0} as another one is currently being loaded", CsUtils.Systems.Logging.LogLevel.Warning, parameters: sceneBuildIndex);
+            CsSettings.Logger.Log("[SceneLoader] Cannot load scene with ID:{0} as another one is currently being loaded", CsUtils.Systems.Logging.LogSeverity.Warning, parameters: sceneBuildIndex);
     }
     /// <summary>
     /// Loads a scene with a simple animation
