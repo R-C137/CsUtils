@@ -20,7 +20,7 @@
  *                   - Log level is now shown in the log (C137)
  *    
  *      [08/12/2023] - Improved stack trace handling (C137)
- *                   - Added compatibility new new indentation system (C137)
+ *                   - Added compatibility with new indentation system (C137)
  *      
  *      [09/12/2023] - Added automatic error logging (C137)
  *                   - Log colors are now serialized in the inspector
@@ -30,6 +30,10 @@
  *                   - Moved queue check from Update() to FixedUpdate() to ignore the timescale (C137)
  *                   - Moved queue logging from a queue to a string (C137)
  *                   - Fixed bug where console logging had to be enabled to do file logging (C137)
+ *      
+ *      [10/12/2023] - Updated accessibility modifiers (C137)
+ *                   - Removed temporary code (C137)
+ *                   - File logging can now be disabled and is not available for WebGL builds (C137)
  */
 using CsUtils.Extensions;
 using System;
@@ -126,7 +130,7 @@ namespace CsUtils.Systems.Logging
         public string log;
 
         /// <summary>
-        /// The level of the log (How important it is)
+        /// The severity of the log 
         /// </summary>
         public LogSeverity level;
 
@@ -141,8 +145,16 @@ namespace CsUtils.Systems.Logging
     /// </summary>
     public interface ILogger
     {
-        public string Log(string log, LogSeverity level, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool forceStackTrace = false, string customStackTrace = null, params object[] parameters);
-
+        public string Log(string log,
+            LogSeverity level,
+            UnityEngine.Object context = null, 
+            Timestamp timestamp = Timestamp.TimeOnly,
+            bool formatLog = true,
+            bool forceShowInConsole = false,
+            bool writeToFile = true,
+            bool forceStackTrace = false,
+            string customStackTrace = null,
+            params object[] parameters);
     }
 
     public class Logging : Singleton<Logging>, ILogger
@@ -163,7 +175,7 @@ namespace CsUtils.Systems.Logging
         public bool doConsoleLogging = true;
 
         /// <summary>
-        /// Whether to do file logging, can be forced despite this value
+        /// Whether to do file logging, cannot be forced if set to false
         /// </summary>
         public bool doFileLogging = true;
 
@@ -175,12 +187,12 @@ namespace CsUtils.Systems.Logging
         /// <summary>
         /// The previous logs awaiting to be logged
         /// </summary>
-        public string previousLog;
+        protected string previousLogs;
 
         /// <summary>
         /// Whether the log file was successfully compressed
         /// </summary>
-        public bool logFileCompressed = false;
+        protected bool logFileCompressed = false;
 
         /// <summary>
         /// Whether the log file can still be compressed
@@ -194,6 +206,7 @@ namespace CsUtils.Systems.Logging
             if(doExceptionLogging)
                 Application.logMessageReceived += HandleErrors;
         }
+
         protected virtual void HandleErrors(string condition, string stackTrace, LogType type)
         {
             if(type == LogType.Exception)
@@ -274,7 +287,7 @@ namespace CsUtils.Systems.Logging
         private void FixedUpdate()
         {
             //Check if the queue contains any items to log. If so log them to file
-            if(previousLog.Any())
+            if(previousLogs.Any())
             {
                 LogToFile(string.Empty);
             }
@@ -302,14 +315,9 @@ namespace CsUtils.Systems.Logging
             string timeStampedLog = $"{timeStampValue} {formattedLog}";
 
             if(forceShowInConsole || (severity >= consoleLogLevel && doConsoleLogging))
-            {
-                Debug.Log(ColorUtility.ToHtmlStringRGB(logColors.GetLevelColor((int)severity)));
                 LogToConsole($"<color=#{ColorUtility.ToHtmlStringRGB(logColors.GetLevelColor((int)severity))}> {formattedLog}</color>", severity);
 
-                
-            }
-
-            if (writeToFile)
+            if (doFileLogging && writeToFile && Application.platform != RuntimePlatform.WebGLPlayer)
             {
                 string fileLog = timeStampedLog;
                 if (forceStackTrace || severity >= LogSeverity.Error)
@@ -442,8 +450,8 @@ namespace CsUtils.Systems.Logging
 
                 string fullLog = string.Empty;
 
-                if (!string.IsNullOrEmpty(previousLog))
-                    fullLog += previousLog;
+                if (!string.IsNullOrEmpty(previousLogs))
+                    fullLog += previousLogs;
 
                 //Add the current log at the bottom since the queued ones were created before this one
                 fullLog += log;
@@ -454,11 +462,11 @@ namespace CsUtils.Systems.Logging
                 fs.Write(bytes, 0, bytes.Length);
                 fs.Close();
 
-                previousLog = null;
+                previousLogs = null;
             }
             catch(Exception)
             {
-                previousLog += log;
+                previousLogs += log;
             }
         }
 
