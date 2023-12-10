@@ -34,6 +34,7 @@
  *      [10/12/2023] - Updated accessibility modifiers (C137)
  *                   - Removed temporary code (C137)
  *                   - File logging can now be disabled and is not available for WebGL builds (C137)
+ *                   - Fixed null reference exception with 'previousLogs' (C137)
  */
 using CsUtils.Extensions;
 using System;
@@ -287,7 +288,7 @@ namespace CsUtils.Systems.Logging
         private void FixedUpdate()
         {
             //Check if the queue contains any items to log. If so log them to file
-            if(previousLogs.Any())
+            if(!string.IsNullOrEmpty(previousLogs))
             {
                 LogToFile(string.Empty);
             }
