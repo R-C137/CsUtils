@@ -493,11 +493,11 @@ namespace CsUtils.Systems.Logging
         {
             logColors = new LogColors()
             {
-                debug = StaticUtils.FromHex("A6A6A6"),
-                info = StaticUtils.FromHex("FBF6EE"),
-                warning = StaticUtils.FromHex("EEC759"),
-                error = StaticUtils.FromHex("EF4040"),
-                fatal = StaticUtils.FromHex("C70039")
+                debug = StaticUtils.ColorFromHex("A6A6A6"),
+                info = StaticUtils.ColorFromHex("FBF6EE"),
+                warning = StaticUtils.ColorFromHex("EEC759"),
+                error = StaticUtils.ColorFromHex("EF4040"),
+                fatal = StaticUtils.ColorFromHex("C70039")
             };
         }
     }
