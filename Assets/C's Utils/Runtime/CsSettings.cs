@@ -16,7 +16,6 @@
  *                   - Fixed null values always populating (C137)
  *                   - Logging folder path support (C137)
  */
-
 using CsUtils.Systems.Logging;
 using System;
 using System.IO;

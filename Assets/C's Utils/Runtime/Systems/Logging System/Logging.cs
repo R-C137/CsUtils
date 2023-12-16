@@ -2,6 +2,9 @@
  * 
  * A full-fledged logging system, based on Minecraft's logging system meant to scalable and customised with ease
  * 
+ * NOTE: As of 2022.3.14f1 the 'HideInCallstack' attribute doesn't work and will still display the Log() functions in the console call stack.
+ *       You can disable this manually in the console settings by enabling 'Strip Logging Callstack'.
+ *       However, double-clicking on the log will bring you to the logging class
  * 
  * Creation Date: 03/12/2023
  * Authors: C137
@@ -35,6 +38,10 @@
  *                   - Removed temporary code (C137)
  *                   - File logging can now be disabled and is not available for WebGL builds (C137)
  *                   - Fixed null reference exception with 'previousLogs' (C137)
+ *      
+ *      [16/12/2023] - Removed unnecessary stripping of the exception string (C137)
+ *                   - Exceptions are now only logged in the logging file (C137)
+ *                   - Stacktrace, console logging and file logging can now be forcefully disabled or enabled when calling the Log() function (C137)
  */
 using CsUtils.Extensions;
 using System;
@@ -151,9 +158,9 @@ namespace CsUtils.Systems.Logging
             UnityEngine.Object context = null, 
             Timestamp timestamp = Timestamp.TimeOnly,
             bool formatLog = true,
-            bool forceShowInConsole = false,
-            bool writeToFile = true,
-            bool forceStackTrace = false,
+            bool? showInConsole = null,
+            bool? fileLogging = null,
+            bool? forceStackTrace = null,
             string customStackTrace = null,
             params object[] parameters);
     }
@@ -171,17 +178,17 @@ namespace CsUtils.Systems.Logging
         public LogSeverity consoleLogLevel = LogSeverity.Info;
 
         /// <summary>
-        /// Whether to do console logging, can be forced despite this value
+        /// Whether to do console logging
         /// </summary>
         public bool doConsoleLogging = true;
 
         /// <summary>
-        /// Whether to do file logging, cannot be forced if set to false
+        /// Whether to do file logging
         /// </summary>
         public bool doFileLogging = true;
 
         /// <summary>
-        /// Whether to automatically log exceptions
+        /// Whether to automatically log exceptions in file
         /// </summary>
         public bool doExceptionLogging = true;
 
@@ -212,7 +219,7 @@ namespace CsUtils.Systems.Logging
         {
             if(type == LogType.Exception)
             {
-                Log(condition.Remove(0,11), LogSeverity.Fatal, stackTrace: stackTrace, forceShowInConsole: true);
+                Log(condition, LogSeverity.Fatal, stackTrace: stackTrace, showInConsole: false);
             }
         }
 
@@ -242,7 +249,7 @@ namespace CsUtils.Systems.Logging
 
                 //Manually log to file so as to avoid recursion
                 if (showError)
-                    LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogSeverity.Error, writeToFile: false), true);
+                    LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogSeverity.Error, fileLogging: false), true);
                 return;
             }
 
@@ -256,7 +263,7 @@ namespace CsUtils.Systems.Logging
                 {
                     //Manually log to file so as to avoid recursion
                     if (showError)
-                        LogToFile(Log("Could not create log zip archive. Archive name is already in use", LogSeverity.Error, writeToFile: false), true);
+                        LogToFile(Log("Could not create log zip archive. Archive name is already in use", LogSeverity.Error, fileLogging: false), true);
 
                     return;
                 }
@@ -280,14 +287,14 @@ namespace CsUtils.Systems.Logging
 
                 //Manually log to file so as to avoid recursion
                 if(showError)
-                    LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogSeverity.Error, writeToFile: false), true);
+                    LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogSeverity.Error, fileLogging: false), true);
             }
 
         }
 
         private void FixedUpdate()
         {
-            //Check if the queue contains any items to log. If so log them to file
+            //Check if there are any items waiting to be logged to file. If so do the logging
             if(!string.IsNullOrEmpty(previousLogs))
             {
                 LogToFile(string.Empty);
@@ -295,33 +302,35 @@ namespace CsUtils.Systems.Logging
         }
 
         /// <summary>
-        /// Logs a given value to the console and to a file
+        /// Display a log to the console and optionally write it to a file
         /// </summary>
         /// <param name="log">The value to log</param>
         /// <param name="severity">The severity of the log</param>
         /// <param name="context">The context in which to display the log</param>
         /// <param name="timestamp">How the timestamp should be displayed</param>
         /// <param name="formatLog">Whether to format the log before displaying it</param>
-        /// <param name="forceShowInConsole">Whether to ignore the console log level and forcefully display the log</param>
-        /// <param name="writeToFile">Whether to log this value to a file</param>
-        /// <param name="forceStackTrace">Whether to display a stacktrace, ignoring the log severity</param>
-        /// <param name="stackTrace">The stacktrace to use, set to null to automatically evaluate it</param>
+        /// <param name="showInConsole">Whether to forcefully display the log in the console. Null to use default behaviour</param>
+        /// <param name="fileLogging">Whether to forcefully display this log in the logging file. Null to use default behaviour</param>
+        /// <param name="forceStackTrace">Whether to forcefully displaay a stacktrace. Null to use default behaviour</param>
+        /// <param name="stackTrace">The stacktrace to use. Null to automatically evaluate it</param>
         /// <param name="parameters">The parameters to format the log with, if formatting is allowed</param>
         /// <returns>The log that was(or should have been) written to the log file</returns>
         [HideInCallstack, HideFromStackTrace]
-        public virtual string Log(string log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool forceShowInConsole = false, bool writeToFile = true, bool forceStackTrace = false, string stackTrace = null, params object[] parameters)
+        public virtual string Log(string log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
         { 
             string timeStampValue = $"[{GetTimestamp()}]";
             string formattedLog = $"[{Enum.GetName(typeof(LogSeverity), severity)}] {(formatLog ? FormatLog(log, parameters) : log)}";
             string timeStampedLog = $"{timeStampValue} {formattedLog}";
 
-            if(forceShowInConsole || (severity >= consoleLogLevel && doConsoleLogging))
+            //if(forceShowInConsole || (severity >= consoleLogLevel && doConsoleLogging))
+            if(showInConsole == true || (showInConsole == null && severity >= consoleLogLevel && doConsoleLogging))
                 LogToConsole($"<color=#{ColorUtility.ToHtmlStringRGB(logColors.GetLevelColor((int)severity))}> {formattedLog}</color>", severity);
 
-            if (doFileLogging && writeToFile && Application.platform != RuntimePlatform.WebGLPlayer)
+            //if (doFileLogging && writeToFile && Application.platform != RuntimePlatform.WebGLPlayer)
+            if(fileLogging == true || (fileLogging == null && doFileLogging && Application.platform != RuntimePlatform.WebGLPlayer))
             {
                 string fileLog = timeStampedLog;
-                if (forceStackTrace || severity >= LogSeverity.Error)
+                if (forceStackTrace == true || (forceStackTrace == null && severity >= LogSeverity.Error))
                 {
                     stackTrace =
                             (stackTrace ?? GetStackTrace())
@@ -406,6 +415,7 @@ namespace CsUtils.Systems.Logging
         /// <param name="log">The log to log</param>
         /// <param name="level">The log level</param>
         /// <param name="context">The context if any</param>
+        [HideInCallstack]
         protected virtual void LogToConsole(string log, LogSeverity level, UnityEngine.Object context = null)
         {
             switch (level)

@@ -1,4 +1,4 @@
-/* FollowAxes.cs - C's Utils
+/* AxisFollow.cs - C's Utils
  * 
  * Follow an object along select axes, using an offset with smoothing
  * 
@@ -11,8 +11,9 @@
  * 
  * Changes: 
  *      [13/12/2023] - Initial implementation (C137)
+ *      [16/12/2023] - Fixed script name in the meta data (C137)
+ *                   - Removed unnecessary using statements (C137)
  */
-using CsUtils.Extensions;
 using System;
 using UnityEngine;
 
