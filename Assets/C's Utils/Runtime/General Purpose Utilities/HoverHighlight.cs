@@ -11,8 +11,10 @@
  * 
  * Changes: 
  *      [16/12/2023] - Initial implementation (C137)
+ *      [18/12/2023] - Added a callback to when the object is clicked (C137)
  */
 using UnityEngine;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(Outline))]
 public class HoverHighlight : MonoBehaviour
@@ -28,6 +30,11 @@ public class HoverHighlight : MonoBehaviour
     public float outlineWidth = 2f;
 
     /// <summary>
+    /// Event raised when the player clicks on the object
+    /// </summary>
+    public UnityEvent onClick;
+
+    /// <summary>
     /// The outline width before highlighting. Used internally to disable highlighting
     /// </summary>
     float normalOutlineWidth;
@@ -39,7 +46,7 @@ public class HoverHighlight : MonoBehaviour
 
     private void Awake()
     {
-        if(outline == null)
+        if (outline == null)
             TryGetComponent(out outline);
     }
 
@@ -53,6 +60,11 @@ public class HoverHighlight : MonoBehaviour
 
         outline.enabled = true;
         outline.OutlineWidth = outlineWidth;
+    }
+
+    private void OnMouseUpAsButton()
+    {
+        onClick?.Invoke();
     }
 
     private void OnMouseExit()
