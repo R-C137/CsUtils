@@ -13,6 +13,9 @@
  *      [13/12/2023] - Initial implementation (C137)
  *      [16/12/2023] - Fixed script name in the meta data (C137)
  *                   - Removed unnecessary using statements (C137)
+ *      
+ *      [18/12/2023] - Fixed animation curve being null on Reset() (C137)
+ *                   - Fixed easing not following smoothing (C137)
  */
 using System;
 using UnityEngine;
@@ -59,6 +62,11 @@ public class AxisFollow : MonoBehaviour
     public bool autoOffset = true;
 
     /// <summary>
+    /// Whether to use the easing for smoothing
+    /// </summary>
+    public bool useEasing;
+
+    /// <summary>
     /// Internal reference to determine when the follow target has changed
     /// </summary>
     Transform _oldTarget;
@@ -90,6 +98,7 @@ public class AxisFollow : MonoBehaviour
     /// </summary>
     private void Reset()
     {
+        easing = new AnimationCurve();
         easing.AddKey(0, 1);
         easing.AddKey(1, 1);
     }
@@ -108,5 +117,20 @@ public class AxisFollow : MonoBehaviour
         }
 
         _oldTarget = target;
+
+        if (useEasing)
+        {
+            Keyframe[] keys = easing.keys;
+
+            keys[^1] = new Keyframe(1, smoothing);
+
+            easing.keys = keys;
+        }
+        else
+        {
+            easing.ClearKeys();
+            easing.AddKey(0, smoothing);
+            easing.AddKey(1, smoothing);
+        }
     }
 }
