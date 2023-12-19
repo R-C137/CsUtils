@@ -42,6 +42,8 @@
  *      [16/12/2023] - Removed unnecessary stripping of the exception string (C137)
  *                   - Exceptions are now only logged in the logging file (C137)
  *                   - Stacktrace, console logging and file logging can now be forcefully disabled or enabled when calling the Log() function (C137)
+ *                   
+ *      [19/12/2023] - Fixed hex colour parsing (C137)
  */
 using CsUtils.Extensions;
 using System;
@@ -155,7 +157,7 @@ namespace CsUtils.Systems.Logging
     {
         public string Log(string log,
             LogSeverity level,
-            UnityEngine.Object context = null, 
+            UnityEngine.Object context = null,
             Timestamp timestamp = Timestamp.TimeOnly,
             bool formatLog = true,
             bool? showInConsole = null,
@@ -211,13 +213,13 @@ namespace CsUtils.Systems.Logging
         {
             CompressLogFile();
 
-            if(doExceptionLogging)
+            if (doExceptionLogging)
                 Application.logMessageReceived += HandleErrors;
         }
 
         protected virtual void HandleErrors(string condition, string stackTrace, LogType type)
         {
-            if(type == LogType.Exception)
+            if (type == LogType.Exception)
             {
                 Log(condition, LogSeverity.Fatal, stackTrace: stackTrace, showInConsole: false);
             }
@@ -286,7 +288,7 @@ namespace CsUtils.Systems.Logging
                     File.Delete(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath), zipFileName + ".zip"));
 
                 //Manually log to file so as to avoid recursion
-                if(showError)
+                if (showError)
                     LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogSeverity.Error, fileLogging: false), true);
             }
 
@@ -295,7 +297,7 @@ namespace CsUtils.Systems.Logging
         private void FixedUpdate()
         {
             //Check if there are any items waiting to be logged to file. If so do the logging
-            if(!string.IsNullOrEmpty(previousLogs))
+            if (!string.IsNullOrEmpty(previousLogs))
             {
                 LogToFile(string.Empty);
             }
@@ -317,17 +319,17 @@ namespace CsUtils.Systems.Logging
         /// <returns>The log that was(or should have been) written to the log file</returns>
         [HideInCallstack, HideFromStackTrace]
         public virtual string Log(string log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
-        { 
+        {
             string timeStampValue = $"[{GetTimestamp()}]";
             string formattedLog = $"[{Enum.GetName(typeof(LogSeverity), severity)}] {(formatLog ? FormatLog(log, parameters) : log)}";
             string timeStampedLog = $"{timeStampValue} {formattedLog}";
 
             //if(forceShowInConsole || (severity >= consoleLogLevel && doConsoleLogging))
-            if(showInConsole == true || (showInConsole == null && severity >= consoleLogLevel && doConsoleLogging))
+            if (showInConsole == true || (showInConsole == null && severity >= consoleLogLevel && doConsoleLogging))
                 LogToConsole($"<color=#{ColorUtility.ToHtmlStringRGB(logColors.GetLevelColor((int)severity))}> {formattedLog}</color>", severity);
 
             //if (doFileLogging && writeToFile && Application.platform != RuntimePlatform.WebGLPlayer)
-            if(fileLogging == true || (fileLogging == null && doFileLogging && Application.platform != RuntimePlatform.WebGLPlayer))
+            if (fileLogging == true || (fileLogging == null && doFileLogging && Application.platform != RuntimePlatform.WebGLPlayer))
             {
                 string fileLog = timeStampedLog;
                 if (forceStackTrace == true || (forceStackTrace == null && severity >= LogSeverity.Error))
@@ -344,7 +346,7 @@ namespace CsUtils.Systems.Logging
             }
 
             return formattedLog;
-                
+
             string GetTimestamp()
             {
                 return timestamp switch
@@ -421,7 +423,7 @@ namespace CsUtils.Systems.Logging
             switch (level)
             {
                 case LogSeverity.Debug:
-                    Debug.Log(log, context); 
+                    Debug.Log(log, context);
                     break;
 
                 case LogSeverity.Info:
@@ -475,7 +477,7 @@ namespace CsUtils.Systems.Logging
 
                 previousLogs = null;
             }
-            catch(Exception)
+            catch (Exception)
             {
                 previousLogs += log;
             }
@@ -487,11 +489,11 @@ namespace CsUtils.Systems.Logging
         /// <returns></returns>
         protected virtual FileStream GetLoggingFileStream()
         {
-            if(!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath)))
+            if (!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath)))
                 Directory.CreateDirectory(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath));
 
             if (File.Exists(CsSettings.singleton.loggingFilePath) && canCompressLog)
-                    return File.Open(CsSettings.singleton.loggingFilePath, FileMode.Create, FileAccess.ReadWrite);
+                return File.Open(CsSettings.singleton.loggingFilePath, FileMode.Create, FileAccess.ReadWrite);
 
             return File.Open(CsSettings.singleton.loggingFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
         }
@@ -503,11 +505,11 @@ namespace CsUtils.Systems.Logging
         {
             logColors = new LogColors()
             {
-                debug = StaticUtils.ColorFromHex("A6A6A6"),
-                info = StaticUtils.ColorFromHex("FBF6EE"),
-                warning = StaticUtils.ColorFromHex("EEC759"),
-                error = StaticUtils.ColorFromHex("EF4040"),
-                fatal = StaticUtils.ColorFromHex("C70039")
+                debug = StaticUtils.ColorFromHex("#A6A6A6"),
+                info = StaticUtils.ColorFromHex("#FBF6EE"),
+                warning = StaticUtils.ColorFromHex("#EEC759"),
+                error = StaticUtils.ColorFromHex("#EF4040"),
+                fatal = StaticUtils.ColorFromHex("#C70039")
             };
         }
     }
