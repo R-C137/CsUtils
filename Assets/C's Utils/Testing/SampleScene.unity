@@ -190,6 +190,7 @@ MonoBehaviour:
     followY: 0
     followZ: 0
   autoOffset: 0
+  useEasing: 0
 --- !u!65 &96464594
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -288,6 +289,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13d2080c05d178945950611a544879d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  bypassUI: 0
   onClick:
     m_PersistentCalls:
       m_Calls:
@@ -831,8 +833,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12d92d0bebb51c34b84c749343522c92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  loggingFilePath: 
-  populateNullValues: 1
+  loggingFilePath: C:\Users\Shaun\AppData\Roaming\DefaultCompany\CsUtils\Logging\latest.log
 --- !u!114 &700561485
 MonoBehaviour:
   m_ObjectHideFlags: 0

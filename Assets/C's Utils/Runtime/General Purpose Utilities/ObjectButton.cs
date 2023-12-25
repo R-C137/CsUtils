@@ -12,14 +12,21 @@
  * 
  * Changes: 
  *      [16/12/2023] - Initial implementation (C137)
+ *      [25/12/2023] - Clicking through UI is now optional (C137)
  */
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 
 ///Add a more comprehensible name to it that cannot be used as the class declaration name
-[AddComponentMenu("Scripts/3DButton")]
+[AddComponentMenu("Scripts/3D Button")]
 public class ObjectButton : MonoBehaviour
 {
+    /// <summary>
+    /// Whether the object should be clickable through the UI
+    /// </summary>
+    public bool bypassUI;
+
     /// <summary>
     /// Callback to when the button is clicked
     /// </summary>
@@ -27,6 +34,7 @@ public class ObjectButton : MonoBehaviour
 
     private void OnMouseUpAsButton()
     {
-        onClick?.Invoke();
+        if(bypassUI || !EventSystem.current.IsPointerOverGameObject())
+            onClick?.Invoke();
     }
 }

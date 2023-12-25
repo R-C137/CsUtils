@@ -83,7 +83,7 @@ public class SceneLoader : MonoBehaviour
         if (!isLoading)
             StartCoroutine(LoadSceneAsync(sceneBuildIndex, parameters));
         else
-            CsSettings.Logger.Log("[SceneLoader] Cannot load scene with ID:{0} as another one is currently being loaded", CsUtils.Systems.Logging.LogSeverity.Warning, parameters: sceneBuildIndex);
+            CsSettings.Logger.LogDirect("[SceneLoader] Cannot load scene with ID:{0} as another one is currently being loaded", CsUtils.Systems.Logging.LogSeverity.Warning, parameters: sceneBuildIndex);
     }
     /// <summary>
     /// Loads a scene with a simple animation

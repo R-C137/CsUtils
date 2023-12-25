@@ -49,7 +49,7 @@ namespace CsUtils.UI
         {
             if (animatedText.gameObject != gameObject)
             {
-                CsSettings.Logger.Log("The referenced 'animatedText' isn't on the same GameObject as the 'HoverSizing' script. Pointer events will not register properly", LogSeverity.Warning, gameObject);
+                CsSettings.Logger.LogDirect("The referenced 'animatedText' isn't on the same GameObject as the 'HoverSizing' script. Pointer events will not register properly", LogSeverity.Warning, gameObject);
             }
         }
 

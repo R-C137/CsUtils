@@ -1,6 +1,6 @@
 /* CsSettings.cs - C's Utils
  * 
- * A class containing all the settings for C's utilities
+ * A class containing the general settings for C's utilities. System specific settings will be found in their appropriate scripts
  * 
  * NOTE: Some settings may not be serialized in the inspector and may need to be set with script
  * 
@@ -15,6 +15,8 @@
  *                   - Logging system access shortcut (C137)
  *                   - Fixed null values always populating (C137)
  *                   - Logging folder path support (C137)
+ *                   
+ *      [25/12/2023] - Better default values (C137)
  */
 using CsUtils.Systems.Logging;
 using System;
@@ -39,22 +41,16 @@ namespace CsUtils
         /// </summary>
         public static ILogger Logger => singleton.logger;
 
-        /// <summary>
-        /// Whether the null values of this class should be automatically populated with their default value
-        /// </summary>
-        public bool populateNullValues = true;
-
         protected override void Awake()
         {
             base.Awake();
 
-            if (!populateNullValues)
-                return;
-
             logger ??= Logging.singleton;
+        }
 
-            if(string.IsNullOrEmpty(loggingFilePath))
-                loggingFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), UnityEngine.Application.companyName, UnityEngine.Application.productName, "Logging", "latest.log");
+        private void Reset()
+        {
+            loggingFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), UnityEngine.Application.companyName, UnityEngine.Application.productName, "Logging", "latest.log");
         }
     }
 }

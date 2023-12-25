@@ -44,6 +44,7 @@
  *                   - Stacktrace, console logging and file logging can now be forcefully disabled or enabled when calling the Log() function (C137)
  *                   
  *      [19/12/2023] - Fixed hex colour parsing (C137)
+ *      [25/12/2023] - Added a function to access the Log(..) function without implicitly using the singleton (C137)
  */
 using CsUtils.Extensions;
 using System;
@@ -155,7 +156,7 @@ namespace CsUtils.Systems.Logging
     /// </summary>
     public interface ILogger
     {
-        public string Log(string log,
+        public string LogDirect(string log,
             LogSeverity level,
             UnityEngine.Object context = null,
             Timestamp timestamp = Timestamp.TimeOnly,
@@ -193,7 +194,7 @@ namespace CsUtils.Systems.Logging
         /// Whether to automatically log exceptions in file
         /// </summary>
         public bool doExceptionLogging = true;
-
+        
         /// <summary>
         /// The previous logs awaiting to be logged
         /// </summary>
@@ -221,7 +222,7 @@ namespace CsUtils.Systems.Logging
         {
             if (type == LogType.Exception)
             {
-                Log(condition, LogSeverity.Fatal, stackTrace: stackTrace, showInConsole: false);
+                LogDirect(condition, LogSeverity.Fatal, stackTrace: stackTrace, showInConsole: false);
             }
         }
 
@@ -251,7 +252,7 @@ namespace CsUtils.Systems.Logging
 
                 //Manually log to file so as to avoid recursion
                 if (showError)
-                    LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogSeverity.Error, fileLogging: false), true);
+                    LogToFile(LogDirect("Could not compress log file as it is currently in use. It will be compressed upon being released", LogSeverity.Error, fileLogging: false), true);
                 return;
             }
 
@@ -265,7 +266,7 @@ namespace CsUtils.Systems.Logging
                 {
                     //Manually log to file so as to avoid recursion
                     if (showError)
-                        LogToFile(Log("Could not create log zip archive. Archive name is already in use", LogSeverity.Error, fileLogging: false), true);
+                        LogToFile(LogDirect("Could not create log zip archive. Archive name is already in use", LogSeverity.Error, fileLogging: false), true);
 
                     return;
                 }
@@ -289,7 +290,7 @@ namespace CsUtils.Systems.Logging
 
                 //Manually log to file so as to avoid recursion
                 if (showError)
-                    LogToFile(Log("Could not compress log file as it is currently in use. It will be compressed upon being released", LogSeverity.Error, fileLogging: false), true);
+                    LogToFile(LogDirect("Could not compress log file as it is currently in use. It will be compressed upon being released", LogSeverity.Error, fileLogging: false), true);
             }
 
         }
@@ -302,6 +303,12 @@ namespace CsUtils.Systems.Logging
                 LogToFile(string.Empty);
             }
         }
+
+        /// <summary>
+        /// A shortcut to access the Log(...) function through the singleton
+        /// </summary>
+        public static string Log(string log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
+                                => singleton.LogDirect(log, severity, context, timestamp, formatLog, showInConsole, fileLogging, forceStackTrace, stackTrace, parameters);
 
         /// <summary>
         /// Display a log to the console and optionally write it to a file
@@ -318,7 +325,7 @@ namespace CsUtils.Systems.Logging
         /// <param name="parameters">The parameters to format the log with, if formatting is allowed</param>
         /// <returns>The log that was(or should have been) written to the log file</returns>
         [HideInCallstack, HideFromStackTrace]
-        public virtual string Log(string log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
+        public virtual string LogDirect(string log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
         {
             string timeStampValue = $"[{GetTimestamp()}]";
             string formattedLog = $"[{Enum.GetName(typeof(LogSeverity), severity)}] {(formatLog ? FormatLog(log, parameters) : log)}";

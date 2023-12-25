@@ -18,31 +18,31 @@ public class LogTest : MonoBehaviour
     [ContextMenu("Debug Log")]
     public void LogDebug()
     {
-        CsSettings.singleton.logger.Log("Debug Log", LogSeverity.Debug);
+        CsSettings.singleton.logger.LogDirect("Debug Log", LogSeverity.Debug);
     }
 
     [ContextMenu("Log Info")]
     public void LogInfo()
     {
-        CsSettings.singleton.logger.Log("Info Log", LogSeverity.Info);
+        CsSettings.singleton.logger.LogDirect("Info Log", LogSeverity.Info);
     }
 
     [ContextMenu("Log Warning")]
     public void LogWarning()
     {
-        CsSettings.singleton.logger.Log("Warning Log", LogSeverity.Warning);
+        CsSettings.singleton.logger.LogDirect("Warning Log", LogSeverity.Warning);
     }
 
     [ContextMenu("Log Error")]
     public void LogError()
     {
-        CsSettings.singleton.logger.Log("Error Log", LogSeverity.Error);
+        CsSettings.singleton.logger.LogDirect("Error Log", LogSeverity.Error);
     }
 
     [ContextMenu("Log Fatal")]
     public void LogFatal()
     {
-        CsSettings.singleton.logger.Log("Fatal Log", LogSeverity.Fatal);
+        CsSettings.singleton.logger.LogDirect("Fatal Log", LogSeverity.Fatal);
     }
 
     // Update is called once per frame
