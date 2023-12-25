@@ -16,17 +16,37 @@
  *      
  *      [18/12/2023] - Fixed animation curve being null on Reset() (C137)
  *                   - Fixed easing not following smoothing (C137)
+ *                   
+ *      [25/12/2023] - Fixed null reference exception (C137)
+ *                   - Smoothing is now done per axis (C137)
+ *                   
+ * TODO:
+ *      Add a button to set the offset automatically (C137)
  */
 using System;
 using UnityEngine;
 
 [Serializable]
-public struct FollowAxes
+public struct AxisInfo
 {
     /// <summary>
     /// Which of the axes to follow
     /// </summary>
     public bool followX, followY, followZ;
+
+    /// <summary>
+    /// The axes to apply smoothing on
+    /// </summary>
+    public SmoothingAxes smoothAxes;
+}
+
+[Serializable]
+public struct SmoothingAxes
+{
+    /// <summary>
+    /// Which of the axes to apply smoothing on
+    /// </summary>
+    public bool smoothX, smoothY, smoothZ;
 }
 
 public class AxisFollow : MonoBehaviour
@@ -39,10 +59,11 @@ public class AxisFollow : MonoBehaviour
     /// <summary>
     /// How smooth should the follow be. Set to 1 to disable smoothing
     /// </summary>
+    [Range(0f, 1f)]
     public float smoothing = 1;
 
     /// <summary>
-    /// The easing to use
+    /// The easing curve to use
     /// </summary>
     public AnimationCurve easing;
 
@@ -52,9 +73,9 @@ public class AxisFollow : MonoBehaviour
     public Vector3 offset;
 
     /// <summary>
-    /// The axes to follow
+    /// Information about the following of the axes
     /// </summary>
-    public FollowAxes axes;
+    public AxisInfo axes;
 
     /// <summary>
     /// Whether to automatically set the offset when a new target is added
@@ -90,7 +111,10 @@ public class AxisFollow : MonoBehaviour
         if (axes.followZ)
             pos.z = target.position.z + offset.z;
 
-        transform.position = Vector3.Lerp(transform.position, pos, easing.Evaluate(smoothing));
+        transform.position = new Vector3(
+            axes.smoothAxes.smoothX ? Mathf.Lerp(transform.position.x, pos.x, easing.Evaluate(smoothing) * Time.timeScale) : pos.x,
+            axes.smoothAxes.smoothY ? Mathf.Lerp(transform.position.y, pos.y, easing.Evaluate(smoothing) * Time.timeScale) : pos.y,
+            axes.smoothAxes.smoothZ ? Mathf.Lerp(transform.position.z, pos.z, easing.Evaluate(smoothing) * Time.timeScale) : pos.z);
     }
 
     /// <summary>
@@ -128,6 +152,7 @@ public class AxisFollow : MonoBehaviour
         }
         else
         {
+            easing ??= new AnimationCurve();
             easing.ClearKeys();
             easing.AddKey(0, smoothing);
             easing.AddKey(1, smoothing);

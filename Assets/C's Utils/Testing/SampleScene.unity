@@ -189,6 +189,10 @@ MonoBehaviour:
     followX: 0
     followY: 0
     followZ: 0
+    smoothAxes:
+      smoothX: 0
+      smoothY: 0
+      smoothZ: 0
   autoOffset: 0
   useEasing: 0
 --- !u!65 &96464594
