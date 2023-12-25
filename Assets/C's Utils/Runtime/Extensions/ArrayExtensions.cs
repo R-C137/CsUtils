@@ -12,7 +12,7 @@
  * Changes: 
  *      [29/11/2023] - Initial implementation (C137)
  *      [03/12/2023] - Enumerable formatting Utility (C137)
- *      [25/12/2023] - Added a function to get a random element from an Enumerable
+ *      [25/12/2023] - Added an extension to get a random element from an Enumerable (C137)
  */
 
 using System;
