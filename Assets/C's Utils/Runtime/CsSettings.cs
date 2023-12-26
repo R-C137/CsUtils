@@ -37,6 +37,11 @@ namespace CsUtils
         public string loggingFilePath;
 
         /// <summary>
+        /// Where should all of the persistent game data be saved
+        /// </summary>
+        public string dataSavingPath;
+
+        /// <summary>
         /// Shortcut to access the logger
         /// </summary>
         public static ILogger Logger => singleton.logger;
@@ -51,6 +56,7 @@ namespace CsUtils
         private void Reset()
         {
             loggingFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), UnityEngine.Application.companyName, UnityEngine.Application.productName, "Logging", "latest.log");
+            dataSavingPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), UnityEngine.Application.companyName, UnityEngine.Application.productName, "Data", "Persistent Data.bin");
         }
     }
 }

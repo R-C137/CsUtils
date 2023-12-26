@@ -20,7 +20,7 @@ public class LogFileOpener : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.L))
         {
-            Logging.singleton.LogDirect("Some error happened", LogSeverity.Error);
+            //Logging.singleton.LogDirect("Some error happened", LogSeverity.Error);
         }
     }
 }
