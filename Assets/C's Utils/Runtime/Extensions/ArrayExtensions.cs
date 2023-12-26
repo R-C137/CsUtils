@@ -1,6 +1,6 @@
 ﻿/* ArrayExtensions.cs - C's Utils
  * 
- * Contains various QoL extensions to arrays
+ * Contains various QoL extensions to Enumerables
  * 
  * 
  * Creation Date: 29/11/2023
@@ -11,11 +11,13 @@
  * 
  * Changes: 
  *      [29/11/2023] - Initial implementation (C137)
- *      [03/12/2023] - Enumerable Formatting Utility (C137)
+ *      [03/12/2023] - Enumerable formatting Utility (C137)
+ *      [25/12/2023] - Added an extension to get a random element from an Enumerable (C137)
  */
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CsUtils.Extensions
 {
@@ -63,6 +65,36 @@ namespace CsUtils.Extensions
 
             return removedElement;
 
+        }
+
+        /// <summary>
+        /// Gets a random element from an IEnumerable
+        /// </summary>
+        /// <typeparam name="T">The type of the enumerable</typeparam>
+        /// <param name="enumerable">The IEnumerable on which the operation shall take place</param>
+        /// <param name="weights">The weights affecting the randomness of the elements</param>
+        /// <returns>A random element from the IEnumerable selected based on the weight</returns>
+        public static T RandomElement<T>(this IEnumerable<T> enumerable, WeightedNumber[] weights = null)
+        {
+            weights ??= GenerateWeights();
+
+            return enumerable.ElementAt(StaticUtils.WeightedRandom(weights));
+
+            WeightedNumber[] GenerateWeights()
+            {
+                WeightedNumber[] weights = new WeightedNumber[enumerable.Count()];
+
+                for (int i = 0; i < enumerable.Count(); i++)
+                {
+                    weights[i] = new WeightedNumber()
+                    {
+                        number = i,
+                        probability = 1
+                    };
+                }
+
+                return weights;
+            }
         }
 
         /// <summary>
