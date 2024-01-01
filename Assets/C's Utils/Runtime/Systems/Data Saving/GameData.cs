@@ -11,6 +11,7 @@
  * 
  * Changes: 
  *      [26/12/2023] - Initial implementation (C137)
+ *      [01/01/2024] - Added an event that is raised when the value of a data is updated (C137)
  */
 using CsUtils;
 using Newtonsoft.Json;
@@ -23,6 +24,16 @@ public class GameData : Singleton<GameData>
     /// All of the data available
     /// </summary>
     public Dictionary<string, object> data = new();
+
+#pragma warning disable IDE1006 // Naming Styles
+    /// <summary>
+    /// Event raised when the value of a data is updated
+    /// </summary>
+    /// <param name="id">The id of the data that was updated</param>
+    /// <param name="data">The new value of the data</param>
+    public delegate void DataUpdated(string id, object data);
+    public event DataUpdated onDataUpdated;
+#pragma warning restore IDE1006 // Naming Styles
 
     /// <summary>
     /// Whether the game data has been loaded
@@ -99,9 +110,18 @@ public class GameData : Singleton<GameData>
     /// <returns>The data that was saved</returns>
     public static T Set<T>(string id, T value)
     {
-        singleton.data[id] = value;
+        //Prevents serializing all of the data unnecessarily
+        if (singleton.data.TryGetValue(id, out object previousValue))
+        {
+            if (previousValue == (object)value)
+                return value;
+
+            singleton.data[id] = value;
+        }
 
         singleton.SaveData();
+
+        singleton.onDataUpdated?.Invoke(id, value);
 
         return value;
     }
