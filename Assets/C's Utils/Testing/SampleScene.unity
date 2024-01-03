@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -917,6 +917,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   slider: {fileID: 649230131}
   id: canvas.persistent_slider
+  sectionID: none
   defaultValue: -1
   autoUpdate: 1
 --- !u!1 &651735270
@@ -969,9 +970,9 @@ GameObject:
   - component: {fileID: 700561480}
   - component: {fileID: 700561483}
   - component: {fileID: 700561482}
-  - component: {fileID: 700561484}
   - component: {fileID: 700561485}
   - component: {fileID: 700561486}
+  - component: {fileID: 700561487}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Player
@@ -1079,21 +1080,6 @@ MonoBehaviour:
   doConsoleLogging: 1
   doFileLogging: 1
   doExceptionLogging: 1
---- !u!114 &700561484
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 700561477}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 12d92d0bebb51c34b84c749343522c92, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  loggingFilePath: C:\Users\Shaun\AppData\Roaming\DefaultCompany\CsUtils\Logging\latest.log
-  dataSavingPath: C:\Users\Shaun\AppData\Roaming\DefaultCompany\CsUtils\Data\Persistent
-    Data.bin
 --- !u!114 &700561485
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1127,6 +1113,21 @@ MonoBehaviour:
     probability: 0.2926829
   - number: 12
     probability: 0.6829268
+--- !u!114 &700561487
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700561477}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12d92d0bebb51c34b84c749343522c92, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  loggingFilePath: C:\Users\Shaun\AppData\Roaming\DefaultCompany\CsUtils\Logging\latest.log
+  dataSavingPath: C:\Users\Shaun\AppData\Roaming\DefaultCompany\CsUtils\Data\Persistent
+    Data.bin
 --- !u!1 &701847741
 GameObject:
   m_ObjectHideFlags: 0
@@ -1772,6 +1773,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 205de6fe18892d743b722dee844953f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dataSections:
+  - {fileID: 11400000, guid: 7fc98138c08073a47a2985f3aaef4bba, type: 2}
 --- !u!4 &2077744307
 Transform:
   m_ObjectHideFlags: 0

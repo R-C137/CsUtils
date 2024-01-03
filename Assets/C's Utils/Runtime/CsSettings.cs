@@ -17,6 +17,7 @@
  *                   - Logging folder path support (C137)
  *                   
  *      [25/12/2023] - Better default values (C137)
+ *      [03/01/2024] - Class is now also ran in the Editor (C137)
  */
 using CsUtils.Systems.Logging;
 using System;
@@ -24,6 +25,7 @@ using System.IO;
 
 namespace CsUtils
 {
+    [UnityEngine.ExecuteAlways]
     public class CsSettings : Singleton<CsSettings>
     {
         /// <summary>
@@ -49,6 +51,9 @@ namespace CsUtils
         protected override void Awake()
         {
             base.Awake();
+            
+            if (!UnityEngine.Application.isPlaying)
+                return;
 
             logger ??= Logging.singleton;
         }

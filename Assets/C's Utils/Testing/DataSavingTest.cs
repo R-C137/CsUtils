@@ -9,17 +9,11 @@ public class DataSavingTest : MonoBehaviour
 
     public string value;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-    }
-
-
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.K))
         {
-            Logging.Log("Loaded data with id: {0}, got value {1}", LogSeverity.Info, parameters: new object[] { id, GameData.Get(id, value) });
+            Logging.Log("Loaded data with id: {0}, got value {1}", LogSeverity.Info, parameters: new object[] { id, GameData.Get(id, defaultValue: value) });
         }
         if (Input.GetKeyDown(KeyCode.L))
         {

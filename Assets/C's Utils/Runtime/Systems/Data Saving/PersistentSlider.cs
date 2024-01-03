@@ -11,6 +11,8 @@
  * 
  * Changes: 
  *      [01/01/2024] - Initial implementation (C137)
+ *      [03/01/2024] - Added data sectioning support (C137)
+ *                   - Improved event subscription handling (C137)
  */
 
 using CsUtils;
@@ -28,6 +30,11 @@ public class PersistentSlider : MonoBehaviour
     /// The id to store the data with
     /// </summary>
     public string id;
+
+    /// <summary>
+    /// The id of the section in which to store this persistent data
+    /// </summary>
+    public string sectionID = "default";
 
     /// <summary>
     /// The default value to initialize the slider with. Set to -1 to use the current value of the slider
@@ -51,10 +58,10 @@ public class PersistentSlider : MonoBehaviour
 
         defaultValue = defaultValue == -1 ? slider.value : defaultValue;
 
-        UpdateValue(id, GameData.Get<double>(id, defaultValue));
+        UpdateValue(id, GameData.Get<double>(id, sectionID, defaultValue));
 
         slider.onValueChanged.AddListener(SliderValueChanged);
-        GameData.singleton.onDataUpdated += UpdateValue;
+        GameData.persistenDataSections[sectionID].onDataUpdated += UpdateValue;
     }
 
     /// <summary>
@@ -64,7 +71,7 @@ public class PersistentSlider : MonoBehaviour
     public void SliderValueChanged(float value)
     {
         if(autoUpdate)
-            GameData.Set(id, value);
+            GameData.Set(id, value, sectionID);
     }
 
     /// <summary>
@@ -101,5 +108,10 @@ public class PersistentSlider : MonoBehaviour
         }
 
         id = (id + slider.transform.name).Replace(' ', '_').ToLower();
+    }
+
+    private void OnDisable()
+    {
+        GameData.persistenDataSections[sectionID].onDataUpdated -= UpdateValue;
     }
 }

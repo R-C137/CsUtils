@@ -1,6 +1,6 @@
 /* GameData.cs - C's Utils
  * 
- * Stores arbitrary data persistently, based on Unity's PlayerPrefs
+ * Stores arbitrary data persistently in multiple sections, based on Unity's PlayerPrefs
  * 
  * 
  * Creation Date: 26/12/2023
@@ -12,75 +12,104 @@
  * Changes: 
  *      [26/12/2023] - Initial implementation (C137)
  *      [01/01/2024] - Added an event that is raised when the value of a data is updated (C137)
+ *      [03/01/2024] - Data sectioning is now supported (C137)
+ *                   - Methods and fields are now static for ease of access (C137)
  */
 using CsUtils;
-using Newtonsoft.Json;
+using CsUtils.Systems.Logging;
+using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
+using static PersistentData;
 
 public class GameData : Singleton<GameData>
 {
     /// <summary>
-    /// All of the data available
+    /// The different sections in which data is saved
     /// </summary>
-    public Dictionary<string, object> data = new();
+    public DataSectionSO[] dataSections;
+
+    /// <summary>
+    /// The actual sections in which data is stored
+    /// </summary>
+    public static Dictionary<string, PersistentData> persistenDataSections = new();
 
 #pragma warning disable IDE1006 // Naming Styles
     /// <summary>
-    /// Event raised when the value of a data is updated
+    /// Event raised when the value of a persistent data from the default data section is updated
     /// </summary>
-    /// <param name="id">The id of the data that was updated</param>
-    /// <param name="data">The new value of the data</param>
-    public delegate void DataUpdated(string id, object data);
-    public event DataUpdated onDataUpdated;
+    public static event DataUpdated onDataUpdated
+    {
+        add => persistenDataSections["default"].onDataUpdated += value;
+        remove => persistenDataSections["default"].onDataUpdated -= value;
+    }
 #pragma warning restore IDE1006 // Naming Styles
-
-    /// <summary>
-    /// Whether the game data has been loaded
-    /// </summary>
-    bool dataLoaded;
 
     protected override void Awake()
     {
         base.Awake();
-        LoadData();
-    }
 
-    /// <summary>
-    /// Loads all the saved data from disk
-    /// </summary>
-    void LoadData()
-    {
-        if (!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.dataSavingPath)) || !File.Exists(CsSettings.singleton.dataSavingPath) || dataLoaded)
+        //Add the base path data saving path as the default one
+        persistenDataSections.Add("default", new PersistentData(CsSettings.singleton.dataSavingPath));
+
+        //Check for clashing section ids and paths
+        if (!ClashCheck())
             return;
-        
-        FileStream fs = File.Open(CsSettings.singleton.dataSavingPath, FileMode.Open, FileAccess.ReadWrite);
 
-        using StreamReader sr = new(fs);
-        data = JsonConvert.DeserializeObject<Dictionary<string, object>>(sr.ReadToEnd());
-
-        dataLoaded = true;
+        //Initiate new data sections
+        foreach (var section in dataSections)
+        {
+            persistenDataSections.Add(section.sectionID, new PersistentData(section.dataPath));
+        }
     }
 
     /// <summary>
-    /// Writes all the saved data to disk
+    /// Checks for clashing section ids and paths
     /// </summary>
-    void SaveData()
+    bool ClashCheck()
     {
-        using StreamWriter wr = new(GetDataFileStream());
-        string json = JsonConvert.SerializeObject(data);
-        wr.Write(json);
+        HashSet<string> sectionIDs = new();
+        HashSet<string> sectionsPaths = new();
 
-        static FileStream GetDataFileStream()
+        List<string> clashingIDs = new();
+        List<string> clashingPaths = new();
+
+        foreach (var section in dataSections.ToArray())
         {
-            if (!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.dataSavingPath)))
-                Directory.CreateDirectory(Path.GetDirectoryName(CsSettings.singleton.dataSavingPath));
+            if (!sectionIDs.Add(section.sectionID))
+            {
+                if (!sectionsPaths.Add(section.dataPath))
+                {
+                    //If both section id and path are clashing, we can safely remove one of them
+                    persistenDataSections.Remove(section.sectionID);
+                    continue;
+                }
+                clashingIDs.Add(section.sectionID);
+                continue;
+            }
 
-            if (File.Exists(CsSettings.singleton.dataSavingPath))
-                return File.Open(CsSettings.singleton.dataSavingPath, FileMode.Create, FileAccess.ReadWrite);
+            if (!sectionsPaths.Add(section.dataPath))
+            {
+                clashingPaths.Add(section.dataPath);
+            }
 
-            return File.Open(CsSettings.singleton.dataSavingPath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            if (section.dataPath == persistenDataSections["default"].dataPath)
+                CsSettings.Logger.LogDirect("Data section with id {0} cannot be set to the default persistent data path", LogSeverity.Warning, parameters: section.sectionID);
         }
+
+        if(clashingIDs.Any())
+            CsSettings.Logger.LogDirect("Found clashing ids for data saving {0}, removing script", LogSeverity.Warning, gameObject, parameters: sectionIDs);
+
+        if(clashingPaths.Any())
+            CsSettings.Logger.LogDirect("Found clashing paths for data saving {0}, removing script", LogSeverity.Error, gameObject, parameters: sectionIDs);
+
+        if (clashingIDs.Any() || clashingPaths.Any())
+        {
+            Destroy(this);
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -88,53 +117,44 @@ public class GameData : Singleton<GameData>
     /// </summary>
     /// <typeparam name="T">The type of the data</typeparam>
     /// <param name="id">The id associated with the data</param>
+    /// <param name="sectionID">The id of the section in which to get the persistent data</param>
     /// <param name="defaultValue">The default value to return is no data was saved</param>
     /// <returns>The value of the data with the associated id</returns>
-
-    public static T Get<T>(string id, T defaultValue = default)
+    public static T Get<T>(string id, string sectionID = "default", T defaultValue = default)
     {
-        singleton.LoadData();
+        if(persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+            return section.Get(id, defaultValue);
 
-        if (singleton.data.TryGetValue(id, out object value))
-            return (T)value;
-
-        return defaultValue;
+        throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
     }
 
     /// <summary>
-    /// Sets a persistent data
+    /// Sets a persistent data for a section
     /// </summary>
     /// <typeparam name="T">The type of the data</typeparam>
     /// <param name="id">The id associated with the data</param>
     /// <param name="value">The value to save the data with</param>
+    /// <param name="sectionID">The id of the section in which to store the persistent data</param>
     /// <returns>The data that was saved</returns>
-    public static T Set<T>(string id, T value)
+    public static T Set<T>(string id, T value, string sectionID = "default")
     {
-        //Prevents serializing all of the data unnecessarily
-        if (singleton.data.TryGetValue(id, out object previousValue))
-        {
-            if (previousValue == (object)value)
-                return value;
+        if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+            return section.Set(id, value);
 
-            singleton.data[id] = value;
-        }
-
-        singleton.SaveData();
-
-        singleton.onDataUpdated?.Invoke(id, value);
-
-        return value;
+        throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
     }
 
     /// <summary>
     /// Whether a persistent data exits
     /// </summary>
     /// <param name="id">The id of the data to check</param>
+    /// <param name="sectionID">The id of the section in which to check for the persistent data</param>
     /// <returns>Whether the persistent data exists</returns>
-    public static bool Has(string id)
+    public static bool Has(string id, string sectionID = "default")
     {
-        singleton.LoadData();
+        if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+            return section.Has(id);
 
-        return singleton.data.ContainsKey(id);
+        throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
     }
 }

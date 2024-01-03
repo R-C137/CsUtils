@@ -46,6 +46,9 @@
  *      [19/12/2023] - Fixed hex colour parsing (C137)
  *      [25/12/2023] - Added a function to access the Log(..) function without implicitly using the singleton (C137)
  *      [26/12/2023] - Prevented string from being treated as an array (C137)
+ *      
+ * TODO:
+ *      Add improved support for logging from within the Editor
  */
 using CsUtils.Extensions;
 using System;
@@ -169,6 +172,7 @@ namespace CsUtils.Systems.Logging
             params object[] parameters);
     }
 
+    [ExecuteAlways]
     public class Logging : Singleton<Logging>, ILogger
     {
         /// <summary>
