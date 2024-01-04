@@ -46,6 +46,7 @@
  *      [19/12/2023] - Fixed hex colour parsing (C137)
  *      [25/12/2023] - Added a function to access the Log(..) function without implicitly using the singleton (C137)
  *      [26/12/2023] - Prevented string from being treated as an array (C137)
+ *      [05/01/2024] - Fixed null reference exception in the log formating (C137)
  *      
  * TODO:
  *      Add improved support for logging from within the Editor
@@ -418,6 +419,8 @@ namespace CsUtils.Systems.Logging
 
                 return obj.ToArray().Format();
             }
+            if (type == null)
+                return "null";
 
             return type.ToString();
         }

@@ -2,7 +2,6 @@
  * 
  * Stores arbitrary data persistently, divisible into multiple sections for better performance
  * 
- * NOTE: Setting & getting data with type 'float' may result in an invalid cast exception. Please instead store them as 'double'
  * 
  * Creation Date: 03/01/2024
  * Authors: C137
@@ -12,6 +11,9 @@
  * 
  * Changes: 
  *      [03/01/2024] - Initial implementation (C137)
+ *      [04/01/2024] - Added TryGet<T>() support (C137)
+ *      [05/01/2024] - Fixed 'float' and 'double' casting errors (C137)
+ *                   - Added data removal support (C137)
  */
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -64,9 +66,31 @@ public class PersistentData
         LoadData();
 
         if (data.TryGetValue(id, out object value))
-            return (T)value;
+        {
+            GameData.FixTypeCasting(value, out T castedData);
+            return castedData;
+        }
 
         return defaultValue;
+    }
+
+    /// <summary>
+    /// Tries to get a persistent data
+    /// </summary>
+    /// <typeparam name="T">The type of the ud</typeparam>
+    /// <param name="id">The id associated with the data</param>
+    /// <param name="value">The value of the data with the associated id if it exists</param>
+    /// <returns>Whether data with the associated id exists</returns>
+    public bool TryGet<T>(string id, out T value)
+    {
+        bool result = data.TryGetValue(id, out object _value);
+
+        if (_value != null)
+            GameData.FixTypeCasting(_value, out value);
+        else
+            value = default;
+
+        return result;
     }
 
     /// <summary>
@@ -101,6 +125,31 @@ public class PersistentData
         LoadData();
 
         return data.ContainsKey(id);
+    }
+
+    /// <summary>
+    /// Clears the saved value for a persistent data
+    /// </summary>
+    /// <param name="id">The id of the persistent data to removed</param>
+    public void Clear(string id)
+    {
+        LoadData();
+
+        if (data.ContainsKey(id))
+        {
+            data.Remove(id);
+            SaveData();
+        }
+    }
+
+    /// <summary>
+    /// Clears all saved data
+    /// </summary>
+    public void ClearAll()
+    {
+        LoadData();
+        data.Clear();
+        SaveData();
     }
 
     /// <summary>

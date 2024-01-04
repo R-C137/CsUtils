@@ -14,14 +14,19 @@
  *      [01/01/2024] - Added an event that is raised when the value of a data is updated (C137)
  *      [03/01/2024] - Data sectioning is now supported (C137)
  *                   - Methods and fields are now static for ease of access (C137)
+ *                   
+ *      [04/01/2024] - Added TryGet<T>() support (C137)
+ *                   - Updated default execution order (C137)
+ *      
+ *      [05/01/2024] - Added data removal support (C137)
  */
 using CsUtils;
 using CsUtils.Systems.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static PersistentData;
 
+[UnityEngine.DefaultExecutionOrder(-50)]
 public class GameData : Singleton<GameData>
 {
     /// <summary>
@@ -38,7 +43,7 @@ public class GameData : Singleton<GameData>
     /// <summary>
     /// Event raised when the value of a persistent data from the default data section is updated
     /// </summary>
-    public static event DataUpdated onDataUpdated
+    public static event PersistentData.DataUpdated onDataUpdated
     {
         add => persistenDataSections["default"].onDataUpdated += value;
         remove => persistenDataSections["default"].onDataUpdated -= value;
@@ -129,6 +134,22 @@ public class GameData : Singleton<GameData>
     }
 
     /// <summary>
+    /// Tries to get a persistent data
+    /// </summary>
+    /// <typeparam name="T">The type of the ud</typeparam>
+    /// <param name="id">The id associated with the data</param>
+    /// <param name="value">The value of the data with the associated id if it exists</param>
+    /// <param name="sectionID">The id of the section in which to get the persistent data</param>
+    /// <returns>Whether data with the associated id exists</returns>
+    public static bool TryGet<T>(string id, out T value, string sectionID = "default")
+    {
+        if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+            return section.TryGet(id, out value);
+
+        throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
+    }
+
+    /// <summary>
     /// Sets a persistent data for a section
     /// </summary>
     /// <typeparam name="T">The type of the data</typeparam>
@@ -156,5 +177,60 @@ public class GameData : Singleton<GameData>
             return section.Has(id);
 
         throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
+    }
+
+    /// <summary>
+    /// Clear the saved value for a persistent data
+    /// </summary>
+    /// <param name="id">The id of the persistent data to removed</param>
+    /// <param name="sectionID">The id of the section to remove the persistent data from</param>
+    public void Clear(string id, string sectionID = "default")
+    {
+        if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+            section.Clear(id);
+
+        throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
+    }
+
+    /// <summary>
+    /// Clears all the data of a section
+    /// </summary>
+    /// <param name="sectionID">The id of the section whose data should be reset</param>
+    public void Clear(string sectionID = "default")
+    {
+        if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+            section.ClearAll();
+
+        throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
+    }
+
+    /// <summary>
+    /// Clear all of the data for every section
+    /// </summary>
+    public void ClearAll()
+    {
+        foreach (var section in persistenDataSections.Values)
+        {
+            section.ClearAll();
+        }
+    }
+
+    /// <summary>
+    /// Fixes any type casting errors caused by the json de-serialization
+    /// </summary>
+    /// <typeparam name="T">The type that the value should be casted to</typeparam>
+    /// <param name="value">The value to fix the casting of</param>
+    /// <param name="destination">The value casted to its correct typet</param>
+    /// <returns>Whether a fix was applied</returns>
+    public static bool FixTypeCasting<T>(object value, out T destination)
+    {
+        if (typeof(T) == typeof(float) && value is double)
+        {
+            destination = (T)Convert.ChangeType(value, typeof(T));
+            return true;
+        }
+
+        destination = (T)value;
+        return false;
     }
 }

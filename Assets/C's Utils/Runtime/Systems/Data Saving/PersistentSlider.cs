@@ -13,6 +13,8 @@
  *      [01/01/2024] - Initial implementation (C137)
  *      [03/01/2024] - Added data sectioning support (C137)
  *                   - Improved event subscription handling (C137)
+ *      
+ *      [05/01/2024] - Added support for type casting fix (C137)
  */
 
 using CsUtils;
@@ -58,7 +60,7 @@ public class PersistentSlider : MonoBehaviour
 
         defaultValue = defaultValue == -1 ? slider.value : defaultValue;
 
-        UpdateValue(id, GameData.Get<double>(id, sectionID, defaultValue));
+        UpdateValue(id, GameData.Get(id, sectionID, defaultValue));
 
         slider.onValueChanged.AddListener(SliderValueChanged);
         GameData.persistenDataSections[sectionID].onDataUpdated += UpdateValue;
@@ -84,14 +86,8 @@ public class PersistentSlider : MonoBehaviour
 
         if (this.id == id)
         {
-            if (value is double d)
-            {
-                slider.value = (float)d;
-            }
-            else if (value is float f)
-            {
-                slider.value = f;
-            }
+            GameData.FixTypeCasting(value, out float result);
+            slider.value = result;
         }
     }
 
