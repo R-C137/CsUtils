@@ -19,218 +19,224 @@
  *                   - Updated default execution order (C137)
  *      
  *      [05/01/2024] - Added data removal support (C137)
+ *                   - Added missing namespace (C137)
+ *                   - Updated execution order for editor data saving support (C137)
  */
-using CsUtils;
+
 using CsUtils.Systems.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-[UnityEngine.DefaultExecutionOrder(-50)]
-public class GameData : Singleton<GameData>
+namespace CsUtils.Systems.DataSaving
 {
-    /// <summary>
-    /// The different sections in which data is saved
-    /// </summary>
-    public DataSectionSO[] dataSections;
+    [UnityEngine.DefaultExecutionOrder(-20), UnityEngine.ExecuteAlways]
+    public class GameData : Singleton<GameData>
+    {
+        /// <summary>
+        /// The different sections in which data is saved
+        /// </summary>
+        public DataSectionSO[] dataSections;
 
-    /// <summary>
-    /// The actual sections in which data is stored
-    /// </summary>
-    public static Dictionary<string, PersistentData> persistenDataSections = new();
+        /// <summary>
+        /// The actual sections in which data is stored
+        /// </summary>
+        public static Dictionary<string, PersistentData> persistenDataSections = new();
 
 #pragma warning disable IDE1006 // Naming Styles
-    /// <summary>
-    /// Event raised when the value of a persistent data from the default data section is updated
-    /// </summary>
-    public static event PersistentData.DataUpdated onDataUpdated
-    {
-        add => persistenDataSections["default"].onDataUpdated += value;
-        remove => persistenDataSections["default"].onDataUpdated -= value;
-    }
+        /// <summary>
+        /// Event raised when the value of a persistent data from the default data section is updated
+        /// </summary>
+        public static event PersistentData.DataUpdated onDataUpdated
+        {
+            add => persistenDataSections["default"].onDataUpdated += value;
+            remove => persistenDataSections["default"].onDataUpdated -= value;
+        }
 #pragma warning restore IDE1006 // Naming Styles
 
-    protected override void Awake()
-    {
-        base.Awake();
-
-        //Add the base path data saving path as the default one
-        persistenDataSections.Add("default", new PersistentData(CsSettings.singleton.dataSavingPath));
-
-        //Check for clashing section ids and paths
-        if (!ClashCheck())
-            return;
-
-        //Initiate new data sections
-        foreach (var section in dataSections)
+        protected override void Awake()
         {
-            persistenDataSections.Add(section.sectionID, new PersistentData(section.dataPath));
-        }
-    }
+            base.Awake();
 
-    /// <summary>
-    /// Checks for clashing section ids and paths
-    /// </summary>
-    bool ClashCheck()
-    {
-        HashSet<string> sectionIDs = new();
-        HashSet<string> sectionsPaths = new();
+            //Add the base path data saving path as the default one
+            persistenDataSections.Clear();
+            persistenDataSections.Add("default", new PersistentData(CsSettings.singleton.dataSavingPath));
 
-        List<string> clashingIDs = new();
-        List<string> clashingPaths = new();
+            //Check for clashing section ids and paths
+            if (!ClashCheck())
+                return;
 
-        foreach (var section in dataSections.ToArray())
-        {
-            if (!sectionIDs.Add(section.sectionID))
+            //Initiate new data sections
+            foreach (var section in dataSections)
             {
-                if (!sectionsPaths.Add(section.dataPath))
+                persistenDataSections.Add(section.sectionID, new PersistentData(section.dataPath));
+            }
+        }
+
+        /// <summary>
+        /// Checks for clashing section ids and paths
+        /// </summary>
+        bool ClashCheck()
+        {
+            HashSet<string> sectionIDs = new();
+            HashSet<string> sectionsPaths = new();
+
+            List<string> clashingIDs = new();
+            List<string> clashingPaths = new();
+
+            foreach (var section in dataSections.ToArray())
+            {
+                if (!sectionIDs.Add(section.sectionID))
                 {
-                    //If both section id and path are clashing, we can safely remove one of them
-                    persistenDataSections.Remove(section.sectionID);
+                    if (!sectionsPaths.Add(section.dataPath))
+                    {
+                        //If both section id and path are clashing, we can safely remove one of them
+                        persistenDataSections.Remove(section.sectionID);
+                        continue;
+                    }
+                    clashingIDs.Add(section.sectionID);
                     continue;
                 }
-                clashingIDs.Add(section.sectionID);
-                continue;
+
+                if (!sectionsPaths.Add(section.dataPath))
+                {
+                    clashingPaths.Add(section.dataPath);
+                }
+
+                if (section.dataPath == persistenDataSections["default"].dataPath)
+                    CsSettings.Logger.LogDirect("Data section with id {0} cannot be set to the default persistent data path", LogSeverity.Warning, parameters: section.sectionID);
             }
 
-            if (!sectionsPaths.Add(section.dataPath))
+            if (clashingIDs.Any())
+                CsSettings.Logger.LogDirect("Found clashing ids for data saving {0}, removing script", LogSeverity.Warning, gameObject, parameters: sectionIDs);
+
+            if (clashingPaths.Any())
+                CsSettings.Logger.LogDirect("Found clashing paths for data saving {0}, removing script", LogSeverity.Error, gameObject, parameters: sectionIDs);
+
+            if (clashingIDs.Any() || clashingPaths.Any())
             {
-                clashingPaths.Add(section.dataPath);
+                Destroy(this);
+                return false;
             }
 
-            if (section.dataPath == persistenDataSections["default"].dataPath)
-                CsSettings.Logger.LogDirect("Data section with id {0} cannot be set to the default persistent data path", LogSeverity.Warning, parameters: section.sectionID);
-        }
-
-        if(clashingIDs.Any())
-            CsSettings.Logger.LogDirect("Found clashing ids for data saving {0}, removing script", LogSeverity.Warning, gameObject, parameters: sectionIDs);
-
-        if(clashingPaths.Any())
-            CsSettings.Logger.LogDirect("Found clashing paths for data saving {0}, removing script", LogSeverity.Error, gameObject, parameters: sectionIDs);
-
-        if (clashingIDs.Any() || clashingPaths.Any())
-        {
-            Destroy(this);
-            return false;
-        }
-
-        return true;
-    }
-
-    /// <summary>
-    /// Gets a persistent data
-    /// </summary>
-    /// <typeparam name="T">The type of the data</typeparam>
-    /// <param name="id">The id associated with the data</param>
-    /// <param name="sectionID">The id of the section in which to get the persistent data</param>
-    /// <param name="defaultValue">The default value to return is no data was saved</param>
-    /// <returns>The value of the data with the associated id</returns>
-    public static T Get<T>(string id, string sectionID = "default", T defaultValue = default)
-    {
-        if(persistenDataSections.TryGetValue(sectionID, out PersistentData section))
-            return section.Get(id, defaultValue);
-
-        throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
-    }
-
-    /// <summary>
-    /// Tries to get a persistent data
-    /// </summary>
-    /// <typeparam name="T">The type of the ud</typeparam>
-    /// <param name="id">The id associated with the data</param>
-    /// <param name="value">The value of the data with the associated id if it exists</param>
-    /// <param name="sectionID">The id of the section in which to get the persistent data</param>
-    /// <returns>Whether data with the associated id exists</returns>
-    public static bool TryGet<T>(string id, out T value, string sectionID = "default")
-    {
-        if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
-            return section.TryGet(id, out value);
-
-        throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
-    }
-
-    /// <summary>
-    /// Sets a persistent data for a section
-    /// </summary>
-    /// <typeparam name="T">The type of the data</typeparam>
-    /// <param name="id">The id associated with the data</param>
-    /// <param name="value">The value to save the data with</param>
-    /// <param name="sectionID">The id of the section in which to store the persistent data</param>
-    /// <returns>The data that was saved</returns>
-    public static T Set<T>(string id, T value, string sectionID = "default")
-    {
-        if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
-            return section.Set(id, value);
-
-        throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
-    }
-
-    /// <summary>
-    /// Whether a persistent data exits
-    /// </summary>
-    /// <param name="id">The id of the data to check</param>
-    /// <param name="sectionID">The id of the section in which to check for the persistent data</param>
-    /// <returns>Whether the persistent data exists</returns>
-    public static bool Has(string id, string sectionID = "default")
-    {
-        if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
-            return section.Has(id);
-
-        throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
-    }
-
-    /// <summary>
-    /// Clear the saved value for a persistent data
-    /// </summary>
-    /// <param name="id">The id of the persistent data to removed</param>
-    /// <param name="sectionID">The id of the section to remove the persistent data from</param>
-    public void Clear(string id, string sectionID = "default")
-    {
-        if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
-            section.Clear(id);
-
-        throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
-    }
-
-    /// <summary>
-    /// Clears all the data of a section
-    /// </summary>
-    /// <param name="sectionID">The id of the section whose data should be reset</param>
-    public void Clear(string sectionID = "default")
-    {
-        if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
-            section.ClearAll();
-
-        throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
-    }
-
-    /// <summary>
-    /// Clear all of the data for every section
-    /// </summary>
-    public void ClearAll()
-    {
-        foreach (var section in persistenDataSections.Values)
-        {
-            section.ClearAll();
-        }
-    }
-
-    /// <summary>
-    /// Fixes any type casting errors caused by the json de-serialization
-    /// </summary>
-    /// <typeparam name="T">The type that the value should be casted to</typeparam>
-    /// <param name="value">The value to fix the casting of</param>
-    /// <param name="destination">The value casted to its correct typet</param>
-    /// <returns>Whether a fix was applied</returns>
-    public static bool FixTypeCasting<T>(object value, out T destination)
-    {
-        if (typeof(T) == typeof(float) && value is double)
-        {
-            destination = (T)Convert.ChangeType(value, typeof(T));
             return true;
         }
 
-        destination = (T)value;
-        return false;
+        /// <summary>
+        /// Gets a persistent data
+        /// </summary>
+        /// <typeparam name="T">The type of the data</typeparam>
+        /// <param name="id">The id associated with the data</param>
+        /// <param name="sectionID">The id of the section in which to get the persistent data</param>
+        /// <param name="defaultValue">The default value to return is no data was saved</param>
+        /// <returns>The value of the data with the associated id</returns>
+        public static T Get<T>(string id, string sectionID = "default", T defaultValue = default)
+        {
+            if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+                return section.Get(id, defaultValue);
+
+            throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
+        }
+
+        /// <summary>
+        /// Tries to get a persistent data
+        /// </summary>
+        /// <typeparam name="T">The type of the ud</typeparam>
+        /// <param name="id">The id associated with the data</param>
+        /// <param name="value">The value of the data with the associated id if it exists</param>
+        /// <param name="sectionID">The id of the section in which to get the persistent data</param>
+        /// <returns>Whether data with the associated id exists</returns>
+        public static bool TryGet<T>(string id, out T value, string sectionID = "default")
+        {
+            if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+                return section.TryGet(id, out value);
+
+            throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
+        }
+
+        /// <summary>
+        /// Sets a persistent data for a section
+        /// </summary>
+        /// <typeparam name="T">The type of the data</typeparam>
+        /// <param name="id">The id associated with the data</param>
+        /// <param name="value">The value to save the data with</param>
+        /// <param name="sectionID">The id of the section in which to store the persistent data</param>
+        /// <returns>The data that was saved</returns>
+        public static T Set<T>(string id, T value, string sectionID = "default")
+        {
+            if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+                return section.Set(id, value);
+
+            throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
+        }
+
+        /// <summary>
+        /// Whether a persistent data exits
+        /// </summary>
+        /// <param name="id">The id of the data to check</param>
+        /// <param name="sectionID">The id of the section in which to check for the persistent data</param>
+        /// <returns>Whether the persistent data exists</returns>
+        public static bool Has(string id, string sectionID = "default")
+        {
+            if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+                return section.Has(id);
+
+            throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
+        }
+
+        /// <summary>
+        /// Clear the saved value for a persistent data
+        /// </summary>
+        /// <param name="id">The id of the persistent data to removed</param>
+        /// <param name="sectionID">The id of the section to remove the persistent data from</param>
+        public void Clear(string id, string sectionID = "default")
+        {
+            if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+                section.Clear(id);
+
+            throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
+        }
+
+        /// <summary>
+        /// Clears all the data of a section
+        /// </summary>
+        /// <param name="sectionID">The id of the section whose data should be reset</param>
+        public void Clear(string sectionID = "default")
+        {
+            if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+                section.ClearAll();
+
+            throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
+        }
+
+        /// <summary>
+        /// Clear all of the data for every section
+        /// </summary>
+        public void ClearAll()
+        {
+            foreach (var section in persistenDataSections.Values)
+            {
+                section.ClearAll();
+            }
+        }
+
+        /// <summary>
+        /// Fixes any type casting errors caused by the json de-serialization
+        /// </summary>
+        /// <typeparam name="T">The type that the value should be casted to</typeparam>
+        /// <param name="value">The value to fix the casting of</param>
+        /// <param name="destination">The value casted to its correct typet</param>
+        /// <returns>Whether a fix was applied</returns>
+        public static bool FixTypeCasting<T>(object value, out T destination)
+        {
+            if (typeof(T) == typeof(float) && value is double)
+            {
+                destination = (T)Convert.ChangeType(value, typeof(T));
+                return true;
+            }
+
+            destination = (T)value;
+            return false;
+        }
     }
 }

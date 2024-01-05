@@ -25,7 +25,7 @@ using System.IO;
 
 namespace CsUtils
 {
-    [UnityEngine.ExecuteAlways]
+    [UnityEngine.DefaultExecutionOrder(-30), UnityEngine.ExecuteAlways]
     public class CsSettings : Singleton<CsSettings>
     {
         /// <summary>
@@ -51,9 +51,6 @@ namespace CsUtils
         protected override void Awake()
         {
             base.Awake();
-            
-            if (!UnityEngine.Application.isPlaying)
-                return;
 
             logger ??= Logging.singleton;
         }
