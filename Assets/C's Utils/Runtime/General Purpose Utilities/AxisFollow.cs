@@ -20,6 +20,8 @@
  *      [25/12/2023] - Fixed null reference exception (C137)
  *                   - Smoothing is now done per axis (C137)
  *                   
+ *      [08/01/2024] - Improved automatic offset calculation (C137)
+ *                   
  * TODO:
  *      Add a button to set the offset automatically (C137)
  */
@@ -136,7 +138,7 @@ public class AxisFollow : MonoBehaviour
 
         if (autoOffset && target != null && _oldTarget != target)
         {
-            offset = (transform.position - target.position).normalized * Vector3.Distance(target.position, transform.position);
+            offset = transform.position - target.position;
             autoOffset = false;
         }
 
