@@ -16,6 +16,8 @@
  *      
  *      [05/01/2024] - Added support for type casting fix (C137)
  *                   - Added missing namespace (C137)
+ *      
+ *      [06/01/2024] - Slider now uses the new peristent property system (C137)
  */
 
 using UnityEngine;
@@ -47,52 +49,53 @@ namespace CsUtils.Systems.DataSaving
         public float defaultValue = -1;
 
         /// <summary>
-        /// Whether the value of the slider should be updated automatically
+        /// Stores the slider's value persistently
         /// </summary>
-        public bool autoUpdate = true;
+        PersistentProperty<float> persistentValue;
 
         private void Start()
         {
             if (slider == null)
             {
-                CsSettings.Logger.LogDirect("No reference to a slider has been set, disabling the persistency", CsUtils.Systems.Logging.LogSeverity.Warning, gameObject);
+                CsSettings.Logger.LogDirect("No slider has been assigned. Disabling script", Logging.LogSeverity.Warning, gameObject);
                 enabled = false;
                 return;
             }
 
-            defaultValue = defaultValue == -1 ? slider.value : defaultValue;
+            InitializeSlider();
+        }
 
-            UpdateValue(id, GameData.Get(id, sectionID, defaultValue));
+        /// <summary>
+        /// Initializes the slider with its proper values
+        /// </summary>
+        void InitializeSlider()
+        {
+            defaultValue = defaultValue == -1 ? slider.value : defaultValue;
+            persistentValue = new(id, defaultValue, sectionID);
 
             slider.onValueChanged.AddListener(SliderValueChanged);
-            GameData.persistenDataSections[sectionID].onDataUpdated += UpdateValue;
         }
 
         /// <summary>
-        /// Called when the value of the slider has been modified
+        /// Called when the value of the slider changes
         /// </summary>
         /// <param name="value">The new value of the slider</param>
-        public void SliderValueChanged(float value)
+        void SliderValueChanged(float value)
         {
-            if (autoUpdate)
-                GameData.Set(id, value, sectionID);
+            persistentValue.Value = value;
         }
 
         /// <summary>
-        /// Updates the value of the slider to the stored value
+        /// Sets the value of the slider to that of the recorded one
         /// </summary>
-        public void UpdateValue(string id, object value)
+        private void LateUpdate()
         {
-            if (!autoUpdate)
-                return;
-
-            if (this.id == id)
-            {
-                GameData.FixTypeCasting(value, out float result);
-                slider.value = result;
-            }
+            slider.value = persistentValue.Value;
         }
 
+        /// <summary>
+        /// Sets the proper values
+        /// </summary>
         private void Reset()
         {
             TryGetComponent(out slider);
@@ -106,11 +109,6 @@ namespace CsUtils.Systems.DataSaving
             }
 
             id = (id + slider.transform.name).Replace(' ', '_').ToLower();
-        }
-
-        private void OnDisable()
-        {
-            GameData.persistenDataSections[sectionID].onDataUpdated -= UpdateValue;
         }
     }
 }
