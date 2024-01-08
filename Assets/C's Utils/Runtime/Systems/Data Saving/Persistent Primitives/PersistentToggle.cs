@@ -11,9 +11,9 @@
  * 
  * Changes: 
  *      [08/01/2024] - Initial implementation (C137)
+ *                   - Better default id (C137)
  */
 
-using CsUtils;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -96,15 +96,12 @@ namespace CsUtils.Systems.DataSaving
                 defaultValue = toggle.isOn;
             }
 
-            Transform parent = toggle.transform.parent;
-
-            while (parent != null)
+            foreach (Transform parent in StaticUtils.GetParents(toggle.transform))
             {
                 id = $"{parent.name}.{id}";
-                parent = parent.parent;
             }
 
-            id = (id + toggle.transform.name).Replace(' ', '_').ToLower();
+            id = (id + toggle.name).Replace(' ', '_').ToLower();
         }
 
         /// <summary>

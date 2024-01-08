@@ -27,9 +27,12 @@
  *      
  *      [13/12/2023] - Renamed functions (C137)
  *                   - Added extensions for getting a random point within a collider (C137)
+ *      
+ *      [08/01/2024] - Added an utility to get all the parents of a transform (C137)
  */
 using CsUtils.Systems.Logging;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -142,6 +145,24 @@ namespace CsUtils
             return result;
         }
 
+        /// <summary>
+        /// Returns all the parents of a transform
+        /// </summary>
+        /// <param name="child">The child whom to query for its parents</param>
+        /// <returns>An list of the parents of the child from closet to furthest</returns>
+        public static List<Transform> GetParents(Transform child)
+        {
+            List<Transform> parents = new();
+            Transform parent = child.parent;
+
+            while (parent != null)
+            {
+                parents.Add(parent);
+                parent = parent.parent;
+            }
+
+            return parents;
+        }
     }
 }
 

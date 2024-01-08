@@ -17,7 +17,9 @@
  *      [05/01/2024] - Added support for type casting fix (C137)
  *                   - Added missing namespace (C137)
  *      
- *      [06/01/2024] - Slider now uses the new peristent property system (C137)
+ *      [08/01/2024] - Slider now uses the new persistent property system (C137)
+ *                   - Better default id (C137)
+ *                   - Fixed errors in meta data (C137)
  */
 
 using UnityEngine;
@@ -100,12 +102,9 @@ namespace CsUtils.Systems.DataSaving
         {
             TryGetComponent(out slider);
 
-            Transform parent = slider.transform.parent;
-
-            while (parent != null)
+            foreach (Transform parent in StaticUtils.GetParents(slider.transform))
             {
                 id = $"{parent.name}.{id}";
-                parent = parent.parent;
             }
 
             id = (id + slider.transform.name).Replace(' ', '_').ToLower();
