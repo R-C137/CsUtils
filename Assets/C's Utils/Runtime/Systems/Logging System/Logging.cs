@@ -45,6 +45,11 @@
  *                   
  *      [19/12/2023] - Fixed hex colour parsing (C137)
  *      [25/12/2023] - Added a function to access the Log(..) function without implicitly using the singleton (C137)
+ *      [26/12/2023] - Prevented string from being treated as an array (C137)
+ *      [05/01/2024] - Fixed null reference exception in the log formating (C137)
+ *                   - Updated execution order (C137)
+ *                   - Added support for logging from within the Editor (C137)
+ *      
  */
 using CsUtils.Extensions;
 using System;
@@ -168,6 +173,7 @@ namespace CsUtils.Systems.Logging
             params object[] parameters);
     }
 
+    [DefaultExecutionOrder(-40), ExecuteAlways]
     public class Logging : Singleton<Logging>, ILogger
     {
         /// <summary>
@@ -403,7 +409,7 @@ namespace CsUtils.Systems.Logging
         /// <returns></returns>
         public virtual string FormatType<T>(T type)
         {
-            if (type is IEnumerable)
+            if (type is IEnumerable && type is not string)
             {
                 List<object> obj = new();
                 foreach (var item in type as IEnumerable)
@@ -413,6 +419,8 @@ namespace CsUtils.Systems.Logging
 
                 return obj.ToArray().Format();
             }
+            if (type == null)
+                return "null";
 
             return type.ToString();
         }

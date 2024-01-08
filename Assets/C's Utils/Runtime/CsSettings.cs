@@ -17,6 +17,7 @@
  *                   - Logging folder path support (C137)
  *                   
  *      [25/12/2023] - Better default values (C137)
+ *      [03/01/2024] - Class is now also ran in the Editor (C137)
  */
 using CsUtils.Systems.Logging;
 using System;
@@ -24,6 +25,7 @@ using System.IO;
 
 namespace CsUtils
 {
+    [UnityEngine.DefaultExecutionOrder(-30), UnityEngine.ExecuteAlways]
     public class CsSettings : Singleton<CsSettings>
     {
         /// <summary>
@@ -35,6 +37,11 @@ namespace CsUtils
         /// Where should the logging folder be found
         /// </summary>
         public string loggingFilePath;
+
+        /// <summary>
+        /// Where should all of the persistent game data be saved
+        /// </summary>
+        public string dataSavingPath;
 
         /// <summary>
         /// Shortcut to access the logger
@@ -51,6 +58,7 @@ namespace CsUtils
         private void Reset()
         {
             loggingFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), UnityEngine.Application.companyName, UnityEngine.Application.productName, "Logging", "latest.log");
+            dataSavingPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), UnityEngine.Application.companyName, UnityEngine.Application.productName, "Data", "Persistent Data.bin");
         }
     }
 }

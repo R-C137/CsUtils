@@ -18,6 +18,9 @@
  *      
  *      [25/12/2023] - Added a property to check if an instance of the singleton exists (C137)
  *                   - Improved singleton instance creation (C137)
+ *                   
+ *      [03/01/2023] - Logging is now done with the default unity logging system (C137)
+ *      
  */
 using UnityEngine;
 
@@ -42,11 +45,17 @@ namespace CsUtils
                 // Create a new instance of T if none is currently present
                 if ((instance ??= FindObjectOfType<T>()) == null)
                 {
+                    if (!Application.isPlaying)
+                    {
+                        Debug.LogWarning($"No instance of '{typeof(T).Name}' has been found. None will be created automatically as the singleton isn't being accessed at runtime");
+                        throw new System.NullReferenceException("No instance of the singleton was found");
+                    }
+
                     var obj = new GameObject($"{typeof(T).Name} Singleton");
 
                     instance = obj.AddComponent<T>();
 
-                    CsSettings.Logger.LogDirect($"No instance of '{typeof(T).Name}' has been found. One has been created automatically", Systems.Logging.LogSeverity.Warning, obj);
+                    Debug.LogWarning($"No instance of '{typeof(T).Name}' has been found. One has been created automatically", obj);
                 }
 
                 return instance;
