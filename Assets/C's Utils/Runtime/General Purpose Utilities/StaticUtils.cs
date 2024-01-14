@@ -29,6 +29,7 @@
  *                   - Added extensions for getting a random point within a collider (C137)
  *      
  *      [08/01/2024] - Added an utility to get all the parents of a transform (C137)
+ *      [10/01/2024] - Made class a partial one (C137)
  */
 using CsUtils.Systems.Logging;
 using System;
@@ -55,7 +56,7 @@ namespace CsUtils
         public float probability;
     }
 
-    public static class StaticUtils
+    public static partial class StaticUtils
     {
         private struct IndexFinder<T>
         {
