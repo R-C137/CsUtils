@@ -49,6 +49,8 @@
  *      [05/01/2024] - Fixed null reference exception in the log formating (C137)
  *                   - Updated execution order (C137)
  *                   - Added support for logging from within the Editor (C137)
+ *                   
+ *      [07/03/2024] - Updated function summaries (C137)
  *      
  */
 using CsUtils.Extensions;
@@ -311,7 +313,7 @@ namespace CsUtils.Systems.Logging
         }
 
         /// <summary>
-        /// A shortcut to access the Log(...) function through the singleton
+        /// A shortcut to access the Log(...) function through the singleton whithout explicitly calling it
         /// </summary>
         public static string Log(string log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
                                 => singleton.LogDirect(log, severity, context, timestamp, formatLog, showInConsole, fileLogging, forceStackTrace, stackTrace, parameters);
@@ -381,7 +383,7 @@ namespace CsUtils.Systems.Logging
                                     .GetFrames()
                                     .Where(frame => !frame.GetMethod().ShouldHideFromStackTrace())
                                     .Select(frame => new System.Diagnostics.StackTrace(frame).ToString())
-                                    .ToArray()).Remove(0, 2);/*Removes the whitespace that the stack trace trace produces for some reason*/
+                                    .ToArray()).Remove(0, 2);//Removes the whitespace that the stack trace trace produces for some reason
             }
         }
 
@@ -394,6 +396,7 @@ namespace CsUtils.Systems.Logging
         /// <returns></returns>
         public virtual string FormatLog(string log, object[] parameters)
         {
+            
             for (int i = 0; i < parameters.Length; i++)
             {
                 log = log.Replace("{" + i + "}", FormatType(parameters[i]));

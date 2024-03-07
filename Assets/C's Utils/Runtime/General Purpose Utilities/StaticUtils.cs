@@ -30,6 +30,7 @@
  *      
  *      [08/01/2024] - Added an utility to get all the parents of a transform (C137)
  *      [10/01/2024] - Made class a partial one (C137)
+ *      [07/03/2024] - ColorFromHex(...) no longer needs a '#' at the start of the hex string
  */
 using CsUtils.Systems.Logging;
 using System;
@@ -141,7 +142,7 @@ namespace CsUtils
         /// <returns></returns>
         public static Color ColorFromHex(string hex)
         {
-            ColorUtility.TryParseHtmlString(hex, out Color result);
+            ColorUtility.TryParseHtmlString(hex.StartsWith('#') ? hex : '#' + hex, out Color result);
 
             return result;
         }

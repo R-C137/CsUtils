@@ -20,12 +20,18 @@
  *                   - Improved singleton instance creation (C137)
  *                   
  *      [03/01/2023] - Logging is now done with the default unity logging system (C137)
+ *      [07/03/2023] - Updated deprecated method calls to new ones (C137)
+ *                   - Added a couple changes to metadata (C137)
  *      
  */
 using UnityEngine;
 
 namespace CsUtils
 {
+    /// <summary>
+    /// Makes the derived class a singleton. Will create a new instance of such class upon being accessed if no previous instance is available.
+    /// </summary>
+    /// <typeparam name="T">The Unity component to turn into a singleton</typeparam>
     public class Singleton<T> : MonoBehaviour where T : Component
     {
         /// <summary>
@@ -43,7 +49,7 @@ namespace CsUtils
             get
             {
                 // Create a new instance of T if none is currently present
-                if ((instance ??= FindObjectOfType<T>()) == null)
+                if ((instance ??= FindFirstObjectByType<T>()) == null)
                 {
                     if (!Application.isPlaying)
                     {
@@ -69,7 +75,7 @@ namespace CsUtils
         {
             get
             {
-                return (instance ??= FindObjectOfType<T>()) == null;
+                return (instance ??= FindFirstObjectByType<T>()) == null;
             }
         }
 #pragma warning restore IDE1006 // Naming Styles
