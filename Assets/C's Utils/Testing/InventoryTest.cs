@@ -6,7 +6,7 @@ public class InventoryTest : MonoBehaviour
 {
     public Inventory inventory;
 
-    public Item indexedItem;
+    public int index;
 
     public int amount = 1;
 
@@ -27,7 +27,7 @@ public class InventoryTest : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.T))
         {
-            inventory.Remove(indexedItem, amount);
+            inventory.RemoveAt(amount, index);
         }
     }
 }

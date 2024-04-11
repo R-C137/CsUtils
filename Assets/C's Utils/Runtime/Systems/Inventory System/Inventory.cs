@@ -11,6 +11,7 @@
  * 
  * Changes: 
  *      [30/11/2023] - Initial implementation (C137)
+ *      [11/04/2023] - Added support for removing a finite quantity at an index (C137)
  */
 using System;
 using System.Collections.Generic;
@@ -146,8 +147,10 @@ namespace CsUtils.Systems.Inventory
         public Inventory(int slotCount) => items = new InventoryItem[slotCount];
         #endregion
 
-        // Simplify access to the array of items
-        // Note: Changing the values of the array will cause the corresponding events to NOT be raised
+        /// <summary>
+        /// Simplify access to the array of items<br></br>
+        /// Note: Changing the values of the array will cause the corresponding events to NOT be raised
+        /// </summary>
         public InventoryItem this[int index] => items[index];
 
         //Simplify the search for the slots of items in the inventory
@@ -360,6 +363,7 @@ namespace CsUtils.Systems.Inventory
         /// </summary>
         /// <param name="item">The item to remove</param>
         /// <param name="removeAll">Whether to remove all occurences of that item</param>
+        /// <param name="normalEqualityCheck">Whether to use the non-overriden 'Equals()' method</param>
         public void Remove(InventoryItem item, bool removeAll = false, bool normalEqualityCheck = true)
         {
             int[] indexes = GetIndexes(item, normalEqualityCheck);
@@ -400,6 +404,24 @@ namespace CsUtils.Systems.Inventory
                 //Reset the index
                 items[indexes[i]] = new();
             }
+        }
+
+        /// <summary>
+        /// Removes an item at an index
+        /// </summary>
+        /// <param name="amount">The amount of the item to remove</param>
+        /// <param name="index">The index at which to remove the item</param>
+        public void RemoveAt(int amount, int index)
+        {
+            int amountToRemove = Mathf.Min(items[index].stack, amount);
+
+            if ((items[index].stack -= amountToRemove) == 0)
+            {
+                onItemRemoved?.Invoke(items[index], amountToRemove, false);
+                items[index] = new();
+            }
+            else
+                onItemRemoved?.Invoke(items[index], amountToRemove, true);
         }
 
         /// <summary>
