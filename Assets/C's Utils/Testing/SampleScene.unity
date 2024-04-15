@@ -1143,13 +1143,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   inventory:
     items:
-    - itemSO: {fileID: 11400000, guid: 3d6a243dbed5be247af01d992653f6e0, type: 2}
+    - item:
+        id: 0
       stack: 1
-    - itemSO: {fileID: 11400000, guid: aca756a476880024daa6ec5846e38e8e, type: 2}
+    - item:
+        id: 1
       stack: 2
-    - itemSO: {fileID: 11400000, guid: 3d6a243dbed5be247af01d992653f6e0, type: 2}
+    - item:
+        id: 2
       stack: 3
-  indexedItem: {fileID: 11400000, guid: 3d6a243dbed5be247af01d992653f6e0, type: 2}
+  itemToAdd:
+    id: 3
+  index: 0
   amount: 2
 --- !u!4 &700561479
 Transform:
