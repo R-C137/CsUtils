@@ -3,7 +3,9 @@ guid: 12d92d0bebb51c34b84c749343522c92
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - modalWindowPrefab: {fileID: 6780223304321315598, guid: aeb83445252e4dd4abc311c7057b2ea5,
+      type: 3}
   executionOrder: -30
   icon: {instanceID: 0}
   userData: 

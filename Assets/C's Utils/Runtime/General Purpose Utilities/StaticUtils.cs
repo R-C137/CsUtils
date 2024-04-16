@@ -20,7 +20,7 @@
  *      
  *      [08/12/2023] - Added missing summaries (C137)
  *                   - Added support for weighted randomness (C137)
- *                   - Moved string extensions to it's own namespace (C137)
+ *                   - Moved string extensions to its own namespace (C137)
  *                   - Updated accessibility of IndexFinder<T> (C137)
  *     
  *      [09/12/2023] - Added support for convert hexadecimal colors into RGB(A) colors (C137)
@@ -30,7 +30,11 @@
  *      
  *      [08/01/2024] - Added an utility to get all the parents of a transform (C137)
  *      [10/01/2024] - Made class a partial one (C137)
- *      [07/03/2024] - ColorFromHex(...) no longer needs a '#' at the start of the hex string
+ *      [07/03/2024] - ColorFromHex(...) no longer needs a '#' at the start of the hex string (C137)
+ *      [16/04/2024] - Added modal window support (C137)
+ *      
+ *  TODO:
+ *      Add object pooling functionality to modal window
  */
 using CsUtils.Systems.Logging;
 using System;
@@ -165,6 +169,26 @@ namespace CsUtils
 
             return parents;
         }
+
+        /// <summary>
+        /// Creates a new canvas with a modal window
+        /// </summary>
+        /// <param name="modalQuestion">The question to diplay on the modal window</param>
+        /// <param name="confirm">The callback when the confirm button is pressed</param>
+        /// <param name="deny">The callback when the deny button is pressed</param>
+        /// <param name="confirmButtonText">The text to show on the confirm button</param>
+        /// <param name="denyButtonText">The text to show on the deny button</param>
+        /// <returns></returns>
+        public static ModalWindow ModalWindow(string modalQuestion, Action confirm, Action deny, string confirmButtonText = "Yes", string denyButtonText = "No")
+        {
+            GameObject modalObj = UnityEngine.Object.Instantiate(CsSettings.singleton.modalWindowPrefab);
+
+            ModalWindow modal = modalObj.transform.GetChild(0).GetComponent<ModalWindow>();
+
+            modal.SetupModal(modalQuestion, confirm, deny, true, confirmButtonText, denyButtonText);
+
+            return modal;
+        }
     }
 }
 
@@ -258,7 +282,7 @@ namespace CsUtils.Extensions
         }
 
         /// <summary>
-        /// Returns a random point within a mesh collider
+        /// Returns a random point within a mesh collider<br></br>
         /// NOTE: Expensive to compute
         /// </summary>
         /// <param name="meshCollider">The mesh collider to get the random point from</param>
