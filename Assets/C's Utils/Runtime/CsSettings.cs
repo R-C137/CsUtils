@@ -18,11 +18,14 @@
  *                   
  *      [25/12/2023] - Better default values (C137)
  *      [03/01/2024] - Class is now also ran in the Editor (C137)
- *      [16/04/2023] - Added a reference to the default modal window prefab (C137)
+ *      [16/04/2024] - Added a reference to the default modal window prefab (C137)
+ *      [17/04/2024] - Added support for environment variables in file paths (C137)
  */
 using CsUtils.Systems.Logging;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace CsUtils
 {
@@ -58,13 +61,46 @@ namespace CsUtils
         {
             base.Awake();
 
+            if(UnityEngine.Application.isPlaying)
+                ComputeFilePaths();
+
             logger ??= Logging.singleton;
+        }
+
+        /// <summary>
+        /// Computes the file paths by expanding the environment variables where applicable
+        /// </summary>
+        void ComputeFilePaths()
+        {
+            loggingFilePath = Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(loggingFilePath));
+            dataSavingPath = Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(loggingFilePath));
+        }
+
+        /// <summary>
+        /// Replace file path by custom definitions
+        /// </summary>
+        /// <param name="path">The original file path</param>
+        /// <returns>The file path with the customs definitions added</returns>
+        public string ReplaceCustomDefinitions(string path)
+        {
+            Dictionary<string, string> definitions = new()
+            {
+                { "%unity.companyName%", UnityEngine.Application.companyName },
+                { "%unity.productName%", UnityEngine.Application.productName }
+            };
+
+            foreach(var definition in definitions)
+            {
+                path = Regex.Replace(path, definition.Key, definition.Value, RegexOptions.IgnoreCase);
+            }
+
+            return path;
         }
 
         private void Reset()
         {
-            loggingFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), UnityEngine.Application.companyName, UnityEngine.Application.productName, "Logging", "latest.log");
-            dataSavingPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), UnityEngine.Application.companyName, UnityEngine.Application.productName, "Data", "Persistent Data.bin");
+            loggingFilePath = Path.Combine("%appdata%", "%unity.companyName%", "%unity.productName%", "Logging", "latest.log");
+            dataSavingPath = Path.Combine("%appdata%", "%unity.companyName%", "%unity.productName%", "Data", "Persistent Data.bin");
         }
     }
 }

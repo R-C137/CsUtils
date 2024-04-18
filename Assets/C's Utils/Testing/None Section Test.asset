@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 721ef28cd2bdb1d47aa164e3f0db88b5, type: 3}
   m_Name: None Section Test
   m_EditorClassIdentifier: 
-  dataPath: C:\Users\Shaun\AppData\Roaming\DefaultCompany\CsUtils\Data\TestingData\5d193d71-8f56-4e14-a17b-5da588756ac7.bin
-  sectionID: none
+  dataPath: '%appddata%\%unity.companyName%\%unity.productName%\Data\22b0d0ce-2b56-47fa-8199-600daedac596.bin'
+  sectionID: 
