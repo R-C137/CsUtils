@@ -12,7 +12,9 @@
  * Changes: 
  *      [30/11/2023] - Initial implementation (C137)
  *      [11/04/2023] - Added support for removing a finite quantity at an index (C137)
- *      [15/03/2023] - Made item generic (C137)
+ *      [15/04/2024] - Made item generic (C137)
+ *      [21/04/2024] - Fixed item addition not working in certain situations (C137)
+ *                   - Added a function to search for the presence of an item within the inventory (C137)
  */
 using System;
 using System.Collections.Generic;
@@ -221,6 +223,17 @@ namespace CsUtils.Systems.Inventory
         /// <returns>Indexes of the occurences of the queried item</returns>
         public int[] GetIndexes(ItemSlot<T> item) => StaticUtils.GetIndexesOf(items, items.Where(a => a == item).ToArray());
 
+        /// <summary>
+        /// Checks whether the inventory contains the queried item
+        /// </summary>
+        /// <param name="item">The item to query</param>
+        public bool HasItem(T item) => FirstIndexOf(item).HasValue;
+
+        /// <summary>
+        /// Checks whether the inventory contains the queried item
+        /// </summary>
+        /// <param name="item">The item to query</param>
+        public bool HasItem(ItemSlot<T> item) => FirstIndexOf(item).HasValue;
 
         /// <summary>
         /// Gets all the indexes of the slots that have space for a given item
@@ -351,14 +364,16 @@ namespace CsUtils.Systems.Inventory
             {
                 if (!items[indexes[i]].Equals(null))
                 {
-                    onItemAdded?.Invoke(items[indexes[i]], AddToStack(ref items[indexes[i]], ref amountLeft), true);
+                    int amountAdded = AddToStack(ref items[indexes[i]], ref amountLeft);
+                    onItemAdded?.Invoke(items[indexes[i]], amountAdded, true);
                 }
                 else
                 {
                     items[indexes[i]].item = item;
                     items[indexes[i]].stack = 0;
 
-                    onItemAdded?.Invoke(items[indexes[i]], AddToStack(ref items[indexes[i]], ref amountLeft), false);
+                    int amountAdded = AddToStack(ref items[indexes[i]], ref amountLeft);
+                    onItemAdded?.Invoke(items[indexes[i]], amountAdded, false);
                 }
 
                 //Check if all the stacks have been added
