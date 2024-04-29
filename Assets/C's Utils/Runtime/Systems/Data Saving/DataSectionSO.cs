@@ -13,6 +13,8 @@
  *      [03/01/2024] - Initial implementation (C137)
  *      [05/01/2024] - Added missing namespace (C137)
  *      [17/04/2024] - Added support for environment variables in file paths (C137)
+ *      [29/04/2024] - Updated code structure (C137)
+ *                   - Data path is now only updated at runtime (C137)
  */
 using System;
 using System.IO;
@@ -26,20 +28,7 @@ namespace CsUtils.Systems.DataSaving
         /// <summary>
         /// The path at which the data for this section will be stored
         /// </summary>
-        public string dataPath
-        {
-            get
-            {
-                if (dataPathUpdated)
-                    return _dataPath;
-
-                return UpdateDataPath();
-            }
-            set
-            {
-                
-            }
-        }
+        public string dataPath => GetDataPath();
 #pragma warning restore IDE1006 // Naming Styles
 
         /// <summary>
@@ -58,9 +47,19 @@ namespace CsUtils.Systems.DataSaving
         [SerializeField, InspectorName("Data Path")]
         string _dataPath;
 
+        string GetDataPath()
+        {
+            if (dataPathUpdated)
+                return _dataPath;
+
+            return UpdateDataPath();
+        }
+
         string UpdateDataPath()
         {
-            dataPathUpdated = true;
+            if(Application.isPlaying)
+                dataPathUpdated = true;
+
             _dataPath = Environment.ExpandEnvironmentVariables(CsSettings.singleton.ReplaceCustomDefinitions(_dataPath));
 
             return _dataPath;

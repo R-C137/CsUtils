@@ -20,6 +20,7 @@
  *      [03/01/2024] - Class is now also ran in the Editor (C137)
  *      [16/04/2024] - Added a reference to the default modal window prefab (C137)
  *      [17/04/2024] - Added support for environment variables in file paths (C137)
+ *      [29/04/2024] - Fixed data saving path default value (C137)
  */
 using CsUtils.Systems.Logging;
 using System;
@@ -73,7 +74,7 @@ namespace CsUtils
         void ComputeFilePaths()
         {
             loggingFilePath = Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(loggingFilePath));
-            dataSavingPath = Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(loggingFilePath));
+            dataSavingPath = Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(dataSavingPath));
         }
 
         /// <summary>
