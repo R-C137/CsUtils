@@ -15,6 +15,10 @@
  *      [15/04/2024] - Made item generic (C137)
  *      [21/04/2024] - Fixed item addition not working in certain situations (C137)
  *                   - Added a function to search for the presence of an item within the inventory (C137)
+ *      
+ *      [01/05/2024] - Removed the need for generic items to inherit from 'IInventoryItem<T>' (C137)
+ *                   - 'IEquatable<T>' & 'IStackable<T>' can be optionally inherited from the generic item (C137)
+ *                   - Item null check is handled directly by the inventory (C137)
  */
 using System;
 using System.Collections.Generic;
@@ -35,25 +39,8 @@ namespace CsUtils.Systems.Inventory
         public int GetMaxStack();
     }
 
-
-    public interface IInventoryItem<T> : IEquatable<T>
-    {
-        ///// <summary>
-        ///// Returns whether this item is null<br></br>
-        ///// Used to check whether a slot is empty
-        ///// </summary>
-        //public bool IsNull();
-
-        /// <summary>
-        /// Returns a null version of this item<br></br>
-        /// Sets the item's slot item value to this to mark it as null
-        /// </summary>
-        public T GetNull();
-
-    }
-
     [Serializable]
-    public class ItemSlot<T> where T : IInventoryItem<T>
+    public class ItemSlot<T>
     {
         /// <summary>
         /// Reference to the actual item of this slot
@@ -61,9 +48,38 @@ namespace CsUtils.Systems.Inventory
         public T item;
 
         /// <summary>
+        /// Whether the item is null
+        /// </summary>
+        public bool hasValue;
+
+        /// <summary>
         /// The amount of item stacked within this slot
         /// </summary>
-        public int stack;
+#pragma warning disable IDE1006 // Naming Styles
+        public int stack
+        { 
+            get 
+            { 
+                return _stack;
+            } 
+            set 
+            {
+                if (value > 0)
+                {
+                    _stack = value;
+                    hasValue = true;    
+                }
+                else
+                    hasValue = false;
+            } 
+        }
+#pragma warning restore IDE1006 // Naming Styles
+
+        /// <summary>
+        /// Actual holder for the amount of item stacked
+        /// </summary>
+        [SerializeField, InspectorName("Stack")]
+        int _stack;
 
 #pragma warning disable IDE1006 // Naming Styles
         /// <summary>
@@ -76,14 +92,18 @@ namespace CsUtils.Systems.Inventory
         {
             return new ItemSlot<T>()
             {
-                item = item.GetNull()
+                item = default,
+                hasValue = false
             };
         }
 
         public override bool Equals(object obj)
         {
-            if(obj == null && item.Equals(item.GetNull()))
+            if(obj == null && !hasValue)
                 return true;
+
+            if (item is IEquatable<T> equatable)
+                return equatable.Equals(obj);
 
             return base.Equals(obj);
         }
@@ -95,7 +115,7 @@ namespace CsUtils.Systems.Inventory
     }
 
     [Serializable]
-    public class Inventory<T> where T : IInventoryItem<T>
+    public class Inventory<T>
     {
         //Delegates used to raise events
         #region Delegates

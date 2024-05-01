@@ -897,9 +897,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   testDict:
     dictionary:
-    - Key: 
+    - Key:
+        dictionary: []
       Value: 0
-    - Key: 
+    - Key:
+        dictionary: []
       Value: 0
 --- !u!1 &517186853
 GameObject:
@@ -1194,16 +1196,23 @@ MonoBehaviour:
   inventory:
     items:
     - item:
+        id: 3
+        data: werts
+      hasValue: 1
+      _stack: 1
+    - item:
         id: 0
-      stack: 1
+        data: 
+      hasValue: 0
+      _stack: 0
     - item:
-        id: 1
-      stack: 2
-    - item:
-        id: 2
-      stack: 3
+        id: 0
+        data: 
+      hasValue: 0
+      _stack: 0
   itemToAdd:
     id: 3
+    data: 
   index: 0
   amount: 2
 --- !u!4 &700561479
