@@ -13,10 +13,10 @@
  *      [29/11/2023] - Initial implementation (C137)
  *                   - Fixed a major bug in 'GetIndexesOf<T>(...)' which caused the first index to always be returned (C137)
  *                   
- *      [30/11/2023] - Fixed a major bug in 'GetIndexesOf<T>(...)' which caused the function to not always returned the queried items (C137)
+ *      [30/11/2023] - Fixed a major bug in 'GetIndexesOf<T>(...)' which caused the function to not always return the queried items (C137)
  *                   - Renamed 'GetIndexesOf<T>(...)' parameter 'T[] search' into 'T[] query' (C137)
  *                   
- *      [05/12/2023] - Added an extension to check if a method should be shown in the stack trace [This extension won't have it's own script as its a few methods] (C137)
+ *      [05/12/2023] - Added an extension to check if a method should be shown in the stack trace [This extension won't have it's own script as its only a few methods] (C137)
  *      
  *      [08/12/2023] - Added missing summaries (C137)
  *                   - Added support for weighted randomness (C137)
@@ -34,6 +34,8 @@
  *      [16/04/2024] - Added modal window support (C137)
  *                   - Moved 'WeightedRandom()' and 'ColiderExtensions' to their own class (C137)
  *                   - Renamed 'ModalWindow(..)' to 'CreateModalWindow(...)' (C137)
+ *      
+ *      [01/05/2024] - Fixed grammatical mistakes in summaries (C137)
  *      
  *  TODO:
  *      Add object pooling functionality to modal window

@@ -11,6 +11,7 @@
  * 
  * Changes: 
  *      [29/04/2024] - Initial implementation (C137)
+ *      [01/05/2024] - Improved code structure (C137)
  *      
  */
 using System;
@@ -22,30 +23,34 @@ using UnityEngine;
 namespace CsUtils
 {
     [Serializable]
-    public class SerializableDictionary<TKey, TValue> : IDictionary<TKey, TValue>, ISerializationCallbackReceiver
+    public struct SerializableKeyValuePair<TKey, TValue>
     {
-        [SerializeField]
-        private List<SerializableKeyValuePair> dictionary = new();
+        public TKey Key;
+        public TValue Value;
 
-        [Serializable]
-        public struct SerializableKeyValuePair
+        public SerializableKeyValuePair(TKey key, TValue value)
         {
-            public TKey Key;
-            public TValue Value;
-
-            public SerializableKeyValuePair(TKey key, TValue value)
-            {
-                Key = key;
-                Value = value;
-            }
-
-            public void SetValue(TValue value)
-            {
-                Value = value;
-            }
+            Key = key;
+            Value = value;
         }
 
+        public void SetValue(TValue value)
+        {
+            Value = value;
+        }
+    }
+
+    [Serializable]
+    public class SerializableDictionary<TKey, TValue> : IDictionary<TKey, TValue>, ISerializationCallbackReceiver
+    {
+        /// <summary>
+        /// The list used to display the dictionary in the inspector
+        /// </summary>
+        [SerializeField]
+        private List<SerializableKeyValuePair<TKey, TValue>> dictionary = new();
+
         private Dictionary<TKey, uint> KeyPositions => _keyPositions.Value;
+
         private Lazy<Dictionary<TKey, uint>> _keyPositions;
 
         public SerializableDictionary()
@@ -107,7 +112,7 @@ namespace CsUtils
                 {
                     KeyPositions[key] = (uint)dictionary.Count;
 
-                    dictionary.Add(new SerializableKeyValuePair(key, value));
+                    dictionary.Add(new SerializableKeyValuePair<TKey,TValue>(key, value));
                 }
             }
         }
@@ -125,7 +130,7 @@ namespace CsUtils
             {
                 KeyPositions[key] = (uint)dictionary.Count;
 
-                dictionary.Add(new SerializableKeyValuePair(key, value));
+                dictionary.Add(new SerializableKeyValuePair<TKey, TValue>(key, value));
             }
         }
 
@@ -194,7 +199,7 @@ namespace CsUtils
 
             for (int i = 0; i < numKeys; ++i, ++arrayIndex)
             {
-                SerializableKeyValuePair entry = dictionary[i];
+                SerializableKeyValuePair<TKey, TValue> entry = dictionary[i];
 
                 array[arrayIndex] = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
             }
@@ -208,7 +213,7 @@ namespace CsUtils
         {
             return dictionary.Select(ToKeyValuePair).GetEnumerator();
 
-            static KeyValuePair<TKey, TValue> ToKeyValuePair(SerializableKeyValuePair skvp)
+            static KeyValuePair<TKey, TValue> ToKeyValuePair(SerializableKeyValuePair<TKey, TValue> skvp)
             {
                 return new KeyValuePair<TKey, TValue>(skvp.Key, skvp.Value);
             }
