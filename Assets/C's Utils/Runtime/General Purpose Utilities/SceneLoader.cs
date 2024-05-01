@@ -12,6 +12,7 @@
  * Changes: 
  *      [06/12/2023] - Initial implementation (C137)
  *      [09/12/2023] - Removed unnecessary using statements (C137)
+ *      [01/05/2024] - Fixed 'DontDestroyOnLoad()' warning when this object is parented (C137)
  */
 using CsUtils;
 using CsUtils.UI;
@@ -70,6 +71,7 @@ public class SceneLoader : MonoBehaviour
 
     private void Awake()
     {
+        transform.SetParent(null);
         DontDestroyOnLoad(this);
     }
 
