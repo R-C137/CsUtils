@@ -1,4 +1,4 @@
-/* WeightedRandom.cs - C's Utils
+/* StaticUtils.WeightedRandom.cs - C's Utils
  * 
  * Generated a random number given specific weights
  * 

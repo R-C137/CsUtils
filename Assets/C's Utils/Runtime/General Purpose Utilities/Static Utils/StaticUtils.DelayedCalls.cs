@@ -1,4 +1,4 @@
-/* DelayedCalls.cs - C's Utils
+/* StaticUtils.DelayedCalls.cs - C's Utils
  * 
  * Executes code at delay for specific time in the frame
  * 
