@@ -51,6 +51,7 @@
  *                   - Added support for logging from within the Editor (C137)
  *                   
  *      [07/03/2024] - Updated function summaries (C137)
+ *      [12/05/2024] - Logs no longer need to be strings (C137)
  *      
  */
 using CsUtils.Extensions;
@@ -163,7 +164,7 @@ namespace CsUtils.Systems.Logging
     /// </summary>
     public interface ILogger
     {
-        public string LogDirect(string log,
+        public string LogDirect(object log,
             LogSeverity level,
             UnityEngine.Object context = null,
             Timestamp timestamp = Timestamp.TimeOnly,
@@ -240,15 +241,15 @@ namespace CsUtils.Systems.Logging
         /// <param name="showError">Whether to debug any errors that occur(internal use only)</param>
         protected virtual void CompressLogFile(bool showError = true)
         {
-            if (!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath)))
+            if (!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath)))
                 return;
 
-            if (!File.Exists(CsSettings.singleton.loggingFilePath))
+            if (!File.Exists(CsSettings.singleton.LoggingFilePath))
                 return;
 
             try
             {
-                using FileStream stream = File.Open(CsSettings.singleton.loggingFilePath, FileMode.Open, FileAccess.Read, FileShare.None);
+                using FileStream stream = File.Open(CsSettings.singleton.LoggingFilePath, FileMode.Open, FileAccess.Read, FileShare.None);
                 stream.Close();
             }
             catch (IOException)
@@ -268,7 +269,7 @@ namespace CsUtils.Systems.Logging
             string zipFileName = DateTime.Now.ToString("dd-MM-yyyy");
 
             int count = 0;
-            while (File.Exists(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath), zipFileName + ".zip")))
+            while (File.Exists(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath), zipFileName + ".zip")))
             {
                 if (count == int.MaxValue)
                 {
@@ -283,18 +284,18 @@ namespace CsUtils.Systems.Logging
 
             try
             {
-                using (var zipArchive = ZipFile.Open(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath), zipFileName + ".zip"), ZipArchiveMode.Create))
+                using (var zipArchive = ZipFile.Open(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath), zipFileName + ".zip"), ZipArchiveMode.Create))
                 {
                     // Add the source file to the zip archive
-                    zipArchive.CreateEntryFromFile(CsSettings.singleton.loggingFilePath, Path.GetFileName(CsSettings.singleton.loggingFilePath));
-                }
+                    zipArchive.CreateEntryFromFile(CsSettings.singleton.LoggingFilePath, Path.GetFileName(CsSettings.singleton.LoggingFilePath));
+                }   
 
                 logFileCompressed = true;
             }
             catch (IOException)
             {
-                if (File.Exists(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath), zipFileName + ".zip")))
-                    File.Delete(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath), zipFileName + ".zip"));
+                if (File.Exists(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath), zipFileName + ".zip")))
+                    File.Delete(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath), zipFileName + ".zip"));
 
                 //Manually log to file so as to avoid recursion
                 if (showError)
@@ -313,9 +314,10 @@ namespace CsUtils.Systems.Logging
         }
 
         /// <summary>
-        /// A shortcut to access the Log(...) function through the singleton whithout explicitly calling it
+        /// A shortcut to access the LogDirect(...) function through the singleton without explicitly calling it
         /// </summary>
-        public static string Log(string log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
+        [HideInCallstack, HideFromStackTrace]
+        public static string Log(object log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
                                 => singleton.LogDirect(log, severity, context, timestamp, formatLog, showInConsole, fileLogging, forceStackTrace, stackTrace, parameters);
 
         /// <summary>
@@ -333,7 +335,7 @@ namespace CsUtils.Systems.Logging
         /// <param name="parameters">The parameters to format the log with, if formatting is allowed</param>
         /// <returns>The log that was(or should have been) written to the log file</returns>
         [HideInCallstack, HideFromStackTrace]
-        public virtual string LogDirect(string log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
+        public virtual string LogDirect(object log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
         {
             string timeStampValue = $"[{GetTimestamp()}]";
             string formattedLog = $"[{Enum.GetName(typeof(LogSeverity), severity)}] {(formatLog ? FormatLog(log, parameters) : log)}";
@@ -394,14 +396,17 @@ namespace CsUtils.Systems.Logging
         /// <param name="log">The log to format</param>
         /// <param name="parameters">The parameters to fromat it with</param>
         /// <returns></returns>
-        public virtual string FormatLog(string log, object[] parameters)
+        public virtual string FormatLog(object log, object[] parameters)
         {
-            
+            if (log is not string)
+                return FormatType(log);
+
             for (int i = 0; i < parameters.Length; i++)
             {
-                log = log.Replace("{" + i + "}", FormatType(parameters[i]));
+                log = (log as string).Replace("{" + i + "}", FormatType(parameters[i]));
             }
-            return log;
+
+            return log as string;
         }
 
         /// <summary>
@@ -507,13 +512,13 @@ namespace CsUtils.Systems.Logging
         /// <returns></returns>
         protected virtual FileStream GetLoggingFileStream()
         {
-            if (!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath)))
-                Directory.CreateDirectory(Path.GetDirectoryName(CsSettings.singleton.loggingFilePath));
+            if (!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath));
 
-            if (File.Exists(CsSettings.singleton.loggingFilePath) && canCompressLog)
-                return File.Open(CsSettings.singleton.loggingFilePath, FileMode.Create, FileAccess.ReadWrite);
+            if (File.Exists(CsSettings.singleton.LoggingFilePath) && canCompressLog)
+                return File.Open(CsSettings.singleton.LoggingFilePath, FileMode.Create, FileAccess.ReadWrite);
 
-            return File.Open(CsSettings.singleton.loggingFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            return File.Open(CsSettings.singleton.LoggingFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
         }
 
         /// <summary>

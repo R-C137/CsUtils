@@ -60,7 +60,7 @@ namespace CsUtils.Systems.DataSaving
 
             //Add the base path data saving path as the default one
             persistenDataSections.Clear();
-            persistenDataSections.Add("default", new PersistentData(CsSettings.singleton.dataSavingPath));
+            persistenDataSections.Add("default", new PersistentData(CsSettings.singleton.DataSavingPath));
 
             //Check for clashing section ids and paths
             if (!ClashCheck())

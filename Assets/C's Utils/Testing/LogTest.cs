@@ -18,7 +18,9 @@ public class LogTest : MonoBehaviour
     [ContextMenu("Debug Log")]
     public void LogDebug()
     {
-        CsSettings.singleton.logger.LogDirect("Debug Log", LogSeverity.Debug);
+        Logging.Log(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, }, LogSeverity.Info);
+
+        CsSettings.Logger.LogDirect("Debug Log", LogSeverity.Debug);
     }
 
     [ContextMenu("Log Info")]

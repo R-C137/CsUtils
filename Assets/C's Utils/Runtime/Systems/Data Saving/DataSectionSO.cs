@@ -68,7 +68,7 @@ namespace CsUtils.Systems.DataSaving
         private void Reset()
         {
             _dataPath = Path.Combine(
-                CsSettings.hasInstance ? Path.GetDirectoryName(CsSettings.singleton.dataSavingPath) : Path.Combine("%appddata%",
+                CsSettings.hasInstance ? Path.GetDirectoryName(CsSettings.singleton.DataSavingPath) : Path.Combine("%appddata%",
                 "%unity.companyName%", "%unity.productName%", "Data"), Guid.NewGuid().ToString() + ".bin");
         }
     }

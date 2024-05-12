@@ -21,6 +21,8 @@
  *      [16/04/2024] - Added a reference to the default modal window prefab (C137)
  *      [17/04/2024] - Added support for environment variables in file paths (C137)
  *      [29/04/2024] - Fixed data saving path default value (C137)
+ *      [12/05/2024] - Full data path is now always returned
+ *      
  */
 using CsUtils.Systems.Logging;
 using System;
@@ -46,12 +48,24 @@ namespace CsUtils
         /// <summary>
         /// Where should the logging folder be found
         /// </summary>
-        public string loggingFilePath;
+        [UnityEngine.SerializeField]
+        string loggingFilePath;
 
         /// <summary>
         /// Where should all of the persistent game data be saved
         /// </summary>
-        public string dataSavingPath;
+        [UnityEngine.SerializeField]
+        string dataSavingPath;
+
+        /// <summary>
+        /// The full path of the logging file path
+        /// </summary>
+        public string LoggingFilePath => Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(loggingFilePath));
+        
+        /// <summary>
+        /// The full file path of the data saving path
+        /// </summary>
+        public string DataSavingPath => Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(dataSavingPath));
 
         /// <summary>
         /// Shortcut to access the logger
@@ -62,20 +76,9 @@ namespace CsUtils
         {
             base.Awake();
 
-            if(UnityEngine.Application.isPlaying)
-                ComputeFilePaths();
-
             logger ??= Logging.singleton;
         }
 
-        /// <summary>
-        /// Computes the file paths by expanding the environment variables where applicable
-        /// </summary>
-        void ComputeFilePaths()
-        {
-            loggingFilePath = Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(loggingFilePath));
-            dataSavingPath = Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(dataSavingPath));
-        }
 
         /// <summary>
         /// Replace file path by custom definitions
