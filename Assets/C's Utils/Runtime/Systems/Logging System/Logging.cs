@@ -52,6 +52,8 @@
  *                   
  *      [07/03/2024] - Updated function summaries (C137)
  *      [12/05/2024] - Logs no longer need to be strings (C137)
+ *      [19/07/2024] - Made 'LogToConsole' protected internal to support the 'StaticUtils.AutoLog' (C137)
+ *                   - Default logger is now set directly on Awake (C137)
  *      
  */
 using CsUtils.Extensions;
@@ -219,6 +221,16 @@ namespace CsUtils.Systems.Logging
         /// </summary>
         protected bool canCompressLog = true;
 
+        protected override void Awake()
+        {
+            base.Awake();
+
+            if (CsSettings.hasInstance)
+                CsSettings.singleton.logger = this;
+            else
+                LogToConsole("No instance of 'CsSettings' could be found. Default logger could not be set", LogSeverity.Warning);
+        }
+
         private void Start()
         {
             CompressLogFile();
@@ -241,6 +253,12 @@ namespace CsUtils.Systems.Logging
         /// <param name="showError">Whether to debug any errors that occur(internal use only)</param>
         protected virtual void CompressLogFile(bool showError = true)
         {
+            if (!CsSettings.hasInstance)
+            {
+                LogToConsole("No instance of 'CsSettings' could be found. Logs files could not be compressed", LogSeverity.Warning);
+                return;
+            }
+
             if (!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath)))
                 return;
 
@@ -441,7 +459,7 @@ namespace CsUtils.Systems.Logging
         /// <param name="level">The log level</param>
         /// <param name="context">The context if any</param>
         [HideInCallstack]
-        protected virtual void LogToConsole(string log, LogSeverity level, UnityEngine.Object context = null)
+        protected internal virtual void LogToConsole(string log, LogSeverity level, UnityEngine.Object context = null)
         {
             switch (level)
             {
@@ -474,6 +492,13 @@ namespace CsUtils.Systems.Logging
         /// <param name="skipCompressionCheck">Whether the file’s compressibility should be skipped</param>
         protected virtual void LogToFile(string log, bool skipCompressionCheck = false)
         {
+
+            if (!CsSettings.hasInstance)
+            {
+                LogToConsole("No instance of 'CsSettings' could be found. Logs files could not be created", LogSeverity.Warning);
+                return;
+            }
+
             if (canCompressLog && !logFileCompressed && !skipCompressionCheck)
                 CompressLogFile(false);
 

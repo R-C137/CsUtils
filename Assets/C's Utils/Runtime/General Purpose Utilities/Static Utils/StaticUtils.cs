@@ -36,6 +36,7 @@
  *                   - Renamed 'ModalWindow(..)' to 'CreateModalWindow(...)' (C137)
  *      
  *      [01/05/2024] - Fixed grammatical mistakes in summaries (C137)
+ *      [19/07/2024] - Added support for AutoLog system (C137)
  *      
  *  TODO:
  *      Add object pooling functionality to modal window
@@ -48,6 +49,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace CsUtils
 {
@@ -146,6 +148,45 @@ namespace CsUtils
             modal.SetupModal(modalQuestion, confirm, deny, true, confirmButtonText, denyButtonText);
 
             return modal;
+        }
+
+        /// <summary>
+        /// Utility function meant to be used internally to switch between C's logging or Unity's logging depending on whether the former has been setup or not<br></br>
+        /// If Unity's logging is used only the log and context will be passed. No parsing will happen to the log meaning the parameters will not be added
+        /// </summary>
+        [HideInCallstack]
+        public static void AutoLog(object log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
+        {
+            Systems.Logging.ILogger defaultLogger = (Logging.hasInstance ? Logging.singleton as Systems.Logging.ILogger : null);
+            Systems.Logging.ILogger logger = CsSettings.hasInstance ? (CsSettings.Logger == null ? defaultLogger : CsSettings.Logger) : defaultLogger;
+
+            if (logger == null)
+            {
+                switch (severity)
+                {
+                    case LogSeverity.Debug:
+                        Debug.Log(log, context);
+                        break;
+
+                    case LogSeverity.Info:
+                        Debug.Log(log, context);
+                        break;
+
+                    case LogSeverity.Warning:
+                        Debug.LogWarning(log, context);
+                        break;
+
+                    case LogSeverity.Error:
+                        Debug.LogError(log, context);
+                        break;
+
+                    case LogSeverity.Fatal:
+                        Debug.LogError(log, context);
+                        break;
+                }
+            }
+            else
+                logger.LogDirect(log, severity, context, timestamp, formatLog, showInConsole, fileLogging, forceStackTrace, stackTrace, parameters);
         }
     }
 }

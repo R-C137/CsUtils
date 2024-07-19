@@ -21,12 +21,18 @@
  *      [05/01/2024] - Added data removal support (C137)
  *                   - Added missing namespace (C137)
  *                   - Updated execution order for editor data saving support (C137)
+ *                   
+ *      [19/07/2024] - Fixed unhandled exception at creation (C137)
+ *                   - Improved clash checks (C137)
+ *                   - Clash check is now done everytime data sections are modified (C137)
  */
 
 using CsUtils.Systems.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using UnityEngine;
 
 namespace CsUtils.Systems.DataSaving
 {
@@ -58,16 +64,26 @@ namespace CsUtils.Systems.DataSaving
         {
             base.Awake();
 
+            SetupDataSections();
+        }
+
+        //Properly setups the data sections and handles clashing
+        void SetupDataSections()
+        {
             //Add the base path data saving path as the default one
             persistenDataSections.Clear();
-            persistenDataSections.Add("default", new PersistentData(CsSettings.singleton.DataSavingPath));
+
+            if (CsSettings.hasInstance)
+                persistenDataSections.Add("default", new PersistentData(CsSettings.singleton.DataSavingPath));
+            else
+                StaticUtils.AutoLog("No instance of 'CsSettings' was found. Default path could not be added", LogSeverity.Warning);
 
             //Check for clashing section ids and paths
             if (!ClashCheck())
                 return;
 
             //Initiate new data sections
-            foreach (var section in dataSections)
+            foreach (var section in dataSections.Where(s => s != null))
             {
                 persistenDataSections.Add(section.sectionID, new PersistentData(section.dataPath));
             }
@@ -84,7 +100,7 @@ namespace CsUtils.Systems.DataSaving
             List<string> clashingIDs = new();
             List<string> clashingPaths = new();
 
-            foreach (var section in dataSections.ToArray())
+            foreach (var section in dataSections.Where(s => s != null))
             {
                 if (!sectionIDs.Add(section.sectionID))
                 {
@@ -92,10 +108,10 @@ namespace CsUtils.Systems.DataSaving
                     {
                         //If both section id and path are clashing, we can safely remove one of them
                         persistenDataSections.Remove(section.sectionID);
-                        continue;
+                        goto defaultClashCheck;
                     }
                     clashingIDs.Add(section.sectionID);
-                    continue;
+                    goto defaultClashCheck;
                 }
 
                 if (!sectionsPaths.Add(section.dataPath))
@@ -103,19 +119,22 @@ namespace CsUtils.Systems.DataSaving
                     clashingPaths.Add(section.dataPath);
                 }
 
+                defaultClashCheck:
                 if (section.dataPath == persistenDataSections["default"].dataPath)
-                    CsSettings.Logger.LogDirect("Data section with id {0} cannot be set to the default persistent data path", LogSeverity.Warning, parameters: section.sectionID);
+                    StaticUtils.AutoLog("Data section with id {0} cannot be set to the default persistent data path", LogSeverity.Warning, parameters: section.sectionID);
             }
 
             if (clashingIDs.Any())
-                CsSettings.Logger.LogDirect("Found clashing ids for data saving {0}, removing script", LogSeverity.Warning, gameObject, parameters: sectionIDs);
+                StaticUtils.AutoLog("Found clashing ids for data saving {0}, " + (Application.isPlaying ? "removing script" : "script will be removed at runtime"), LogSeverity.Warning, gameObject, parameters: sectionIDs);
 
             if (clashingPaths.Any())
-                CsSettings.Logger.LogDirect("Found clashing paths for data saving {0}, removing script", LogSeverity.Error, gameObject, parameters: sectionIDs);
+                StaticUtils.AutoLog("Found clashing paths for data saving {0}, " + (Application.isPlaying ? "removing script" : "script will be removed at runtime"), LogSeverity.Error, gameObject, parameters: sectionIDs);
 
             if (clashingIDs.Any() || clashingPaths.Any())
             {
-                Destroy(this);
+                if(Application.isPlaying)
+                    Destroy(this);
+
                 return false;
             }
 
@@ -237,6 +256,11 @@ namespace CsUtils.Systems.DataSaving
 
             destination = (T)value;
             return false;
+        }
+
+        private void OnValidate()
+        {
+            SetupDataSections();
         }
     }
 }

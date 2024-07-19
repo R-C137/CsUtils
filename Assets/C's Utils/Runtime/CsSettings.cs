@@ -22,6 +22,7 @@
  *      [17/04/2024] - Added support for environment variables in file paths (C137)
  *      [29/04/2024] - Fixed data saving path default value (C137)
  *      [12/05/2024] - Full data path is now always returned
+ *      [19/07/2024] - Logger is no longer assgined in 'CsSettings' (C137)
  *      
  */
 using CsUtils.Systems.Logging;
@@ -71,13 +72,6 @@ namespace CsUtils
         /// Shortcut to access the logger
         /// </summary>
         public static ILogger Logger => singleton.logger;
-
-        protected override void Awake()
-        {
-            base.Awake();
-
-            logger ??= Logging.singleton;
-        }
 
 
         /// <summary>

@@ -19,9 +19,11 @@
  *      [25/12/2023] - Added a property to check if an instance of the singleton exists (C137)
  *                   - Improved singleton instance creation (C137)
  *                   
- *      [03/01/2023] - Logging is now done with the default unity logging system (C137)
- *      [07/03/2023] - Updated deprecated method calls to new ones (C137)
+ *      [03/01/2024] - Logging is now done with the default unity logging system (C137)
+ *      [07/03/2024] - Updated deprecated method calls to new ones (C137)
  *                   - Added a couple changes to metadata (C137)
+ *      
+ *      [19/07/2024] - Fixed 'hasInstance' returning an inverted bool (C137)
  *      
  */
 using UnityEngine;
@@ -75,7 +77,7 @@ namespace CsUtils
         {
             get
             {
-                return (instance ??= FindFirstObjectByType<T>()) == null;
+                return (instance ??= FindFirstObjectByType<T>()) != null;
             }
         }
 #pragma warning restore IDE1006 // Naming Styles
