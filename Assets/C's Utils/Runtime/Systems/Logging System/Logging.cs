@@ -179,7 +179,7 @@ namespace CsUtils.Systems.Logging
     }
 
     [DefaultExecutionOrder(-40), ExecuteAlways]
-    public class Logging : Singleton<Logging>, ILogger
+    public class Logging : MonoBehaviour, ILogger
     {
         /// <summary>
         /// The color-coding for each of the logs
@@ -221,12 +221,12 @@ namespace CsUtils.Systems.Logging
         /// </summary>
         protected bool canCompressLog = true;
 
-        protected override void Awake()
+        void Awake()
         {
-            base.Awake();
+            Singleton.Create(this);
 
-            if (CsSettings.hasInstance)
-                CsSettings.singleton.logger = this;
+            if (Singleton.HasInstance<CsSettings>())
+                Singleton.Get<CsSettings>().logger = this;
             else
                 LogToConsole("No instance of 'CsSettings' could be found. Default logger could not be set", LogSeverity.Warning);
         }
@@ -253,21 +253,21 @@ namespace CsUtils.Systems.Logging
         /// <param name="showError">Whether to debug any errors that occur(internal use only)</param>
         protected virtual void CompressLogFile(bool showError = true)
         {
-            if (!CsSettings.hasInstance)
+            if (!Singleton.HasInstance<CsSettings>())
             {
                 LogToConsole("No instance of 'CsSettings' could be found. Logs files could not be compressed", LogSeverity.Warning);
                 return;
             }
 
-            if (!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath)))
+            if (!Directory.Exists(Path.GetDirectoryName(Singleton.Get<CsSettings>().LoggingFilePath)))
                 return;
 
-            if (!File.Exists(CsSettings.singleton.LoggingFilePath))
+            if (!File.Exists(Singleton.Get<CsSettings>().LoggingFilePath))
                 return;
 
             try
             {
-                using FileStream stream = File.Open(CsSettings.singleton.LoggingFilePath, FileMode.Open, FileAccess.Read, FileShare.None);
+                using FileStream stream = File.Open(Singleton.Get<CsSettings>().LoggingFilePath, FileMode.Open, FileAccess.Read, FileShare.None);
                 stream.Close();
             }
             catch (IOException)
@@ -287,7 +287,7 @@ namespace CsUtils.Systems.Logging
             string zipFileName = DateTime.Now.ToString("dd-MM-yyyy");
 
             int count = 0;
-            while (File.Exists(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath), zipFileName + ".zip")))
+            while (File.Exists(Path.Combine(Path.GetDirectoryName(Singleton.Get<CsSettings>().LoggingFilePath), zipFileName + ".zip")))
             {
                 if (count == int.MaxValue)
                 {
@@ -302,18 +302,18 @@ namespace CsUtils.Systems.Logging
 
             try
             {
-                using (var zipArchive = ZipFile.Open(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath), zipFileName + ".zip"), ZipArchiveMode.Create))
+                using (var zipArchive = ZipFile.Open(Path.Combine(Path.GetDirectoryName(Singleton.Get<CsSettings>().LoggingFilePath), zipFileName + ".zip"), ZipArchiveMode.Create))
                 {
                     // Add the source file to the zip archive
-                    zipArchive.CreateEntryFromFile(CsSettings.singleton.LoggingFilePath, Path.GetFileName(CsSettings.singleton.LoggingFilePath));
+                    zipArchive.CreateEntryFromFile(Singleton.Get<CsSettings>().LoggingFilePath, Path.GetFileName(Singleton.Get<CsSettings>().LoggingFilePath));
                 }   
 
                 logFileCompressed = true;
             }
             catch (IOException)
             {
-                if (File.Exists(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath), zipFileName + ".zip")))
-                    File.Delete(Path.Combine(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath), zipFileName + ".zip"));
+                if (File.Exists(Path.Combine(Path.GetDirectoryName(Singleton.Get<CsSettings>().LoggingFilePath), zipFileName + ".zip")))
+                    File.Delete(Path.Combine(Path.GetDirectoryName(Singleton.Get<CsSettings>().LoggingFilePath), zipFileName + ".zip"));
 
                 //Manually log to file so as to avoid recursion
                 if (showError)
@@ -336,7 +336,7 @@ namespace CsUtils.Systems.Logging
         /// </summary>
         [HideInCallstack, HideFromStackTrace]
         public static string Log(object log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
-                                => singleton.LogDirect(log, severity, context, timestamp, formatLog, showInConsole, fileLogging, forceStackTrace, stackTrace, parameters);
+                                => Singleton.Get<Logging>().LogDirect(log, severity, context, timestamp, formatLog, showInConsole, fileLogging, forceStackTrace, stackTrace, parameters);
 
         /// <summary>
         /// Display a log to the console and optionally write it to a file
@@ -493,7 +493,7 @@ namespace CsUtils.Systems.Logging
         protected virtual void LogToFile(string log, bool skipCompressionCheck = false)
         {
 
-            if (!CsSettings.hasInstance)
+            if (!Singleton.Get<CsSettings>())
             {
                 LogToConsole("No instance of 'CsSettings' could be found. Logs files could not be created", LogSeverity.Warning);
                 return;
@@ -537,13 +537,13 @@ namespace CsUtils.Systems.Logging
         /// <returns></returns>
         protected virtual FileStream GetLoggingFileStream()
         {
-            if (!Directory.Exists(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath)))
-                Directory.CreateDirectory(Path.GetDirectoryName(CsSettings.singleton.LoggingFilePath));
+            if (!Directory.Exists(Path.GetDirectoryName(Singleton.Get<CsSettings>().LoggingFilePath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(Singleton.Get<CsSettings>().LoggingFilePath));
 
-            if (File.Exists(CsSettings.singleton.LoggingFilePath) && canCompressLog)
-                return File.Open(CsSettings.singleton.LoggingFilePath, FileMode.Create, FileAccess.ReadWrite);
+            if (File.Exists(Singleton.Get<CsSettings>().LoggingFilePath) && canCompressLog)
+                return File.Open(Singleton.Get<CsSettings>().LoggingFilePath, FileMode.Create, FileAccess.ReadWrite);
 
-            return File.Open(CsSettings.singleton.LoggingFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            return File.Open(Singleton.Get<CsSettings>().LoggingFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
         }
 
         /// <summary>

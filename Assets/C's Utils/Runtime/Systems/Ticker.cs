@@ -1,6 +1,6 @@
 /* Ticker.cs - C's Utils
  * 
- * A tick system useful for optimisation
+ * A tick system useful for optimization
  * 
  * 
  * Creation Date: 10/05/2024
@@ -14,13 +14,12 @@
  *      
  */
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace CsUtils.Systems.Tick
 {
-    public class Ticker : Singleton<Ticker>
+    public class Ticker : MonoBehaviour
     {
         public class Tickable
         {
@@ -64,6 +63,11 @@ namespace CsUtils.Systems.Tick
         /// </summary>
         List<Tickable> tickables = new();
 #pragma warning restore IDE0044 // Add readonly modifier
+
+        private void Awake()
+        {
+            Singleton.Create(this);
+        }
 
         public void Update()
         {
@@ -110,12 +114,12 @@ namespace CsUtils.Systems.Tick
         /// <param name="callback">The callback to execute at the given tick rate</param>
         public static void SubscribeTick(int tickRate, Action callback)
         {
-            singleton.tickables.Add(new(callback, tickRate));
+            Singleton.Get<Ticker>().tickables.Add(new(callback, tickRate));
         }
 
         public static void UnSubscribeTick(Action callback)
         {
-            singleton.tickables.RemoveAll((t) => t.callback == callback);
+            Singleton.Get<Ticker>().tickables.RemoveAll((t) => t.callback == callback);
         }
     }
 }

@@ -34,7 +34,7 @@ using System.Text.RegularExpressions;
 namespace CsUtils
 {
     [UnityEngine.DefaultExecutionOrder(-30), UnityEngine.ExecuteAlways]
-    public class CsSettings : Singleton<CsSettings>
+    public class CsSettings : UnityEngine.MonoBehaviour
     {
         /// <summary>
         /// What logger should C's Utilities use
@@ -71,7 +71,7 @@ namespace CsUtils
         /// <summary>
         /// Shortcut to access the logger
         /// </summary>
-        public static ILogger Logger => singleton.logger;
+        public static ILogger Logger => Singleton.Get<CsSettings>().logger;
 
 
         /// <summary>

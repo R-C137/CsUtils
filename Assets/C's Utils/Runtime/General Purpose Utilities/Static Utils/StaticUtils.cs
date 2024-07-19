@@ -141,7 +141,7 @@ namespace CsUtils
         /// <returns></returns>
         public static ModalWindow CreateModalWindow(string modalQuestion, Action confirm, Action deny, string confirmButtonText = "Yes", string denyButtonText = "No")
         {
-            GameObject modalObj = UnityEngine.Object.Instantiate(CsSettings.singleton.modalWindowPrefab);
+            GameObject modalObj = UnityEngine.Object.Instantiate(Singleton.Get<CsSettings>().modalWindowPrefab);
 
             ModalWindow modal = modalObj.transform.GetChild(0).GetComponent<ModalWindow>();
 
@@ -157,8 +157,8 @@ namespace CsUtils
         [HideInCallstack]
         public static void AutoLog(object log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
         {
-            Systems.Logging.ILogger defaultLogger = (Logging.hasInstance ? Logging.singleton as Systems.Logging.ILogger : null);
-            Systems.Logging.ILogger logger = CsSettings.hasInstance ? (CsSettings.Logger == null ? defaultLogger : CsSettings.Logger) : defaultLogger;
+            Systems.Logging.ILogger defaultLogger = (Singleton.HasInstance<Logging>() ? Singleton.Get<Logging>() as Systems.Logging.ILogger : null);
+            Systems.Logging.ILogger logger = Singleton.HasInstance<CsSettings>() ? (CsSettings.Logger == null ? defaultLogger : CsSettings.Logger) : defaultLogger;
 
             if (logger == null)
             {

@@ -37,7 +37,7 @@ using UnityEngine;
 namespace CsUtils.Systems.DataSaving
 {
     [UnityEngine.DefaultExecutionOrder(-20), UnityEngine.ExecuteAlways]
-    public class GameData : Singleton<GameData>
+    public class GameData : MonoBehaviour
     {
         /// <summary>
         /// The different sections in which data is saved
@@ -60,9 +60,9 @@ namespace CsUtils.Systems.DataSaving
         }
 #pragma warning restore IDE1006 // Naming Styles
 
-        protected override void Awake()
+        void Awake()
         {
-            base.Awake();
+            Singleton.Create(this);
 
             SetupDataSections();
         }
@@ -73,8 +73,8 @@ namespace CsUtils.Systems.DataSaving
             //Add the base path data saving path as the default one
             persistenDataSections.Clear();
 
-            if (CsSettings.hasInstance)
-                persistenDataSections.Add("default", new PersistentData(CsSettings.singleton.DataSavingPath));
+            if (Singleton.Get<CsSettings>())
+                persistenDataSections.Add("default", new PersistentData(Singleton.Get<CsSettings>().DataSavingPath));
             else
                 StaticUtils.AutoLog("No instance of 'CsSettings' was found. Default path could not be added", LogSeverity.Warning);
 

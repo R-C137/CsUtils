@@ -60,7 +60,7 @@ namespace CsUtils.Systems.DataSaving
             if(Application.isPlaying)
                 dataPathUpdated = true;
 
-            _dataPath = Environment.ExpandEnvironmentVariables(CsSettings.singleton.ReplaceCustomDefinitions(_dataPath));
+            _dataPath = Environment.ExpandEnvironmentVariables(Singleton.Get<CsSettings>().ReplaceCustomDefinitions(_dataPath));
 
             return _dataPath;
         }
@@ -68,7 +68,7 @@ namespace CsUtils.Systems.DataSaving
         private void Reset()
         {
             _dataPath = Path.Combine(
-                CsSettings.hasInstance ? Path.GetDirectoryName(CsSettings.singleton.DataSavingPath) : Path.Combine("%appddata%",
+                Singleton.HasInstance<CsSettings>() ? Path.GetDirectoryName(Singleton.Get<CsSettings>().DataSavingPath) : Path.Combine("%appddata%",
                 "%unity.companyName%", "%unity.productName%", "Data"), Guid.NewGuid().ToString() + ".bin");
         }
     }
