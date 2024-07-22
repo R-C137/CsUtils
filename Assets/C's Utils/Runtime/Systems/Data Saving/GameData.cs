@@ -25,6 +25,8 @@
  *      [19/07/2024] - Fixed unhandled exception at creation (C137)
  *                   - Improved clash checks (C137)
  *                   - Clash check is now done everytime data sections are modified (C137)
+ *                   
+ *      [22/07/2024] - Proper singleton implementation (C137)
  */
 
 using CsUtils.Systems.Logging;
@@ -261,6 +263,11 @@ namespace CsUtils.Systems.DataSaving
         private void OnValidate()
         {
             SetupDataSections();
+        }
+
+        private void OnDestroy()
+        {
+            Singleton.Remove(this);
         }
     }
 }

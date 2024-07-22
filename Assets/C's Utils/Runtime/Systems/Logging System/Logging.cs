@@ -54,6 +54,9 @@
  *      [12/05/2024] - Logs no longer need to be strings (C137)
  *      [19/07/2024] - Made 'LogToConsole' protected internal to support the 'StaticUtils.AutoLog' (C137)
  *                   - Default logger is now set directly on Awake (C137)
+ *                   
+ *      [22/07/2024] - Proper singleton implementation (C137)
+ *                   - Updated execution order (C137)
  *      
  */
 using CsUtils.Extensions;
@@ -178,7 +181,7 @@ namespace CsUtils.Systems.Logging
             params object[] parameters);
     }
 
-    [DefaultExecutionOrder(-40), ExecuteAlways]
+    [DefaultExecutionOrder(-30), ExecuteAlways]
     public class Logging : MonoBehaviour, ILogger
     {
         /// <summary>
@@ -559,6 +562,11 @@ namespace CsUtils.Systems.Logging
                 error = StaticUtils.ColorFromHex("#EF4040"),
                 fatal = StaticUtils.ColorFromHex("#C70039")
             };
+        }
+
+        private void OnDestroy()
+        {
+            Singleton.Remove(this);
         }
     }
 }

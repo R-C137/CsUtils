@@ -11,6 +11,7 @@
  * 
  * Changes: 
  *      [10/05/2024] - Initial implementation (C137)
+ *      [22/07/2024] - Proper singleton implementation (C137)
  *      
  */
 using System;
@@ -120,6 +121,11 @@ namespace CsUtils.Systems.Tick
         public static void UnSubscribeTick(Action callback)
         {
             Singleton.Get<Ticker>().tickables.RemoveAll((t) => t.callback == callback);
+        }
+
+        private void OnDestroy()
+        {
+            Singleton.Remove(this);
         }
     }
 }

@@ -23,6 +23,8 @@
  *      [29/04/2024] - Fixed data saving path default value (C137)
  *      [12/05/2024] - Full data path is now always returned
  *      [19/07/2024] - Logger is no longer assgined in 'CsSettings' (C137)
+ *      [22/07/2024] - Proper singleton implementation (C137)
+ *                   - Updated execution order (C137)
  *      
  */
 using CsUtils.Systems.Logging;
@@ -33,7 +35,7 @@ using System.Text.RegularExpressions;
 
 namespace CsUtils
 {
-    [UnityEngine.DefaultExecutionOrder(-30), UnityEngine.ExecuteAlways]
+    [UnityEngine.DefaultExecutionOrder(-40), UnityEngine.ExecuteAlways]
     public class CsSettings : UnityEngine.MonoBehaviour
     {
         /// <summary>
@@ -74,6 +76,11 @@ namespace CsUtils
         public static ILogger Logger => Singleton.Get<CsSettings>().logger;
 
 
+        private void Awake()
+        {
+            Singleton.Create(this);
+        }
+
         /// <summary>
         /// Replace file path by custom definitions
         /// </summary>
@@ -99,6 +106,11 @@ namespace CsUtils
         {
             loggingFilePath = Path.Combine("%appdata%", "%unity.companyName%", "%unity.productName%", "Logging", "latest.log");
             dataSavingPath = Path.Combine("%appdata%", "%unity.companyName%", "%unity.productName%", "Data", "Persistent Data.bin");
+        }
+
+        private void OnDestroy()
+        {
+            Singleton.Remove(this);
         }
     }
 }

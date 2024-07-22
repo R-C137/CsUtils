@@ -23,6 +23,8 @@
  *      
  *      [19/07/2024] - Fixed 'hasInstance' returning an inverted bool (C137)
  *                   - Singleton pattern is no longer done used inheritance (C137)
+ *                   
+ *      [22/07/2024] - No logs are printed when trying to remove a non-singleton instance (C137)
  *      
  */
 using CsUtils.Systems.Logging;
@@ -85,10 +87,7 @@ namespace CsUtils
         public static void Remove<T>(T instance) where T : Component
         {
             if (!HasInstance<T>())
-            {
-                StaticUtils.AutoLog($"'{typeof(T)}' is not a declared singleton", LogSeverity.Warning);
                 return;
-            }
 
             instances.Remove(typeof(T));
             instanceHash.Remove(typeof(T));
