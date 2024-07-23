@@ -37,6 +37,7 @@
  *      
  *      [01/05/2024] - Fixed grammatical mistakes in summaries (C137)
  *      [19/07/2024] - Added support for AutoLog system (C137)
+ *      [23/07/2024] - Added an utility for moving a RectTransform to the mouse position (C137)
  *      
  *  TODO:
  *      Add object pooling functionality to modal window
@@ -187,6 +188,20 @@ namespace CsUtils
             }
             else
                 logger.LogDirect(log, severity, context, timestamp, formatLog, showInConsole, fileLogging, forceStackTrace, stackTrace, parameters);
+        }
+
+        /// <summary>
+        /// Moves a RectTransform to the mouse position
+        /// </summary>
+        /// <param name="rectTransform">The RectTransform to move</param>
+        /// <param name="canvas">The canvas the RectTransform is part of</param>
+        /// <param name="mousePosition">The position of the mouse</param>
+        /// <param name="offest">Offset of the final position</param>
+        public static void MoveRectToMouse(RectTransform rectTransform, Canvas canvas, Vector2 mousePosition, Vector2 offest)
+        {
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas.transform as RectTransform, mousePosition, canvas.worldCamera, out Vector2 movePos);
+
+            rectTransform.position = canvas.transform.TransformPoint(movePos + offest);
         }
     }
 }
