@@ -6,7 +6,7 @@ MonoImporter:
   defaultReferences:
   - modalWindowPrefab: {fileID: 6780223304321315598, guid: aeb83445252e4dd4abc311c7057b2ea5,
       type: 3}
-  executionOrder: -30
+  executionOrder: -40
   icon: {instanceID: 0}
   userData: 
   assetBundleName: 
