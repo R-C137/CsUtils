@@ -358,42 +358,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   inventory:
     slots:
-    - item:
-        id: 0
-        name: 
-        stack: 0
-      hasValue: 0
-      _stack: 0
-    - item:
-        id: 0
-        name: 
-        stack: 0
-      hasValue: 0
-      _stack: 0
-    - item:
-        id: 0
-        name: 
-        stack: 0
-      hasValue: 0
-      _stack: 0
-    - item:
-        id: 0
-        name: 
-        stack: 0
-      hasValue: 0
-      _stack: 0
-    - item:
-        id: 0
-        name: 
-        stack: 0
-      hasValue: 0
-      _stack: 0
-  itemTOAdd:
-    id: 2
-    name: dsg
-    stack: 0
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
+    - {fileID: 0}
+  itemTOAdd: {fileID: 11400000, guid: 5cf4042f93f76554c94a2be7125cf961, type: 2}
   count: 12
   prioNull: 0
+  exaactCompa: 0
 --- !u!4 &1130490397
 Transform:
   m_ObjectHideFlags: 0

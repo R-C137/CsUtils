@@ -23,6 +23,12 @@
  *      [23/07/2024] - Inventory can now be enumerated over (C137)
  *                   - Improved constructing inventory with items (C137)
  *                   - Changed name of variable 'items' to 'slots' (C137)
+ *                   - Added a function to get the stack of an item (C137)
+ *                   - Improved item queries (C137)
+ *                   - Items can now track the slot they are in (C137)
+ *                   - Improved item additions (C137)
+ *      
+ *      [24/07/2024] - Total inventory rework (C137)
  */
 using System;
 using System.Collections;
@@ -33,94 +39,57 @@ using UnityEngine;
 
 namespace CsUtils.Systems.Inventory
 {
-    /// <summary>
-    /// A way for items to have a stacking system
-    /// </summary>
-    public interface IStackable
+    public interface ICloneable<T>
     {
         /// <summary>
-        /// Gets the maximum amount of this items that can be stacked in a slot
+        /// Returns a clone of T
         /// </summary>
-        public int GetMaxStack();
+        public T Clone();
     }
 
-    [Serializable]
-    public class ItemSlot<T>
+#pragma warning disable IDE1006 // Naming Styles
+    public interface IItem<T> : ICloneable<T> where T : class
     {
         /// <summary>
-        /// Reference to the actual item of this slot
+        /// The amount of item stacked within the slot this item is found in
         /// </summary>
-        public T item;
+        /// <returns></returns>
+        public int stack { get; set; }
 
         /// <summary>
-        /// Whether the item is null
+        /// The maximum amount of times that this item can be stacked
         /// </summary>
-        public bool hasValue;
+        public int maxStack { get; set; }
 
         /// <summary>
-        /// The amount of item stacked within this slot
+        /// The slot that this item is found in
         /// </summary>
-#pragma warning disable IDE1006 // Naming Styles
-        public int stack
-        { 
-            get 
-            { 
-                return _stack;
-            } 
-            set 
-            {
-                if (value > 0)
-                {
-                    _stack = value;
-                    hasValue = true;    
-                }
-                else
-                    hasValue = false;
-            } 
-        }
-#pragma warning restore IDE1006 // Naming Styles
+        /// <returns></returns>
+        public int slot { get; set; }
 
         /// <summary>
-        /// Actual holder for the amount of item stacked
+        /// Whether unity will serialize this item<br></br>
+        /// When unity serializes an item that is not a ScriptableObject, it will never be null. Setting this value to true will make the inventory use a work-around
         /// </summary>
-        [SerializeField, InspectorName("Stack")]
-        int _stack;
+        public bool isUnitySerializable { get; set; }
 
-#pragma warning disable IDE1006 // Naming Styles
         /// <summary>
-        /// The maximum amount of items that can be stacked in this slot
+        /// Whether the item has a value (is not null)
         /// </summary>
-        public int maxStackSize => item is IStackable ? (item as IStackable).GetMaxStack() : int.MaxValue;
-#pragma warning restore IDE1006 // Naming Styles
+        public bool isNull { get; set; }
 
-        public ItemSlot<T> GetNull()
-        {
-            return new ItemSlot<T>()
-            {
-                item = default,
-                hasValue = false
-            };
-        }
 
-        public override bool Equals(object obj)
-        {
-            if(obj == null && !hasValue)
-                return true;
-
-            if (item is IEquatable<T> equatable)
-                return equatable.Equals(obj);
-
-            return base.Equals(obj);
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(item, stack, maxStackSize);
-        }
+        /// <summary>
+        /// Checks whether the queried item is of the same kind as this item
+        /// </summary>
+        /// <param name="item">The item to query</param>
+        /// <returns></returns>
+        public bool Is(T item);
     }
+#pragma warning restore IDE1006 // Naming Styles
 
     [Serializable]
-    public class Inventory<T> : IEnumerable<T>
+    public class Inventory<T> : IEnumerable<T> where T : class, IItem<T>
     {
         //Delegates used to raise events
         #region Delegates
@@ -130,26 +99,27 @@ namespace CsUtils.Systems.Inventory
         /// <param name="item">The item that was added</param>
         /// <param name="stackAdded">The stack that was added</param>
         /// <param name="stackOnly">Whether only the stack was increased</param>
-        public delegate void ItemAdded(ItemSlot<T> item, int stackAdded, bool stackOnly);
+        public delegate void ItemAdded(T item, int stackAdded, bool stackOnly);
         /// <summary>
         /// Called when an item is removed from the inventory
         /// </summary>
         /// <param name="item">The item that was removed</param>
         /// <param name="stackRemoved">The stack that was removed</param>
         /// <param name="stackOnly">Whether only the stack was decreased</param>
-        public delegate void ItemRemoved(ItemSlot<T> item, int stackRemoved, bool stackOnly);
-        public delegate void ItemSwapped(ItemSlot<T> itemA, ItemSlot<T> itemB);
-        public delegate void ItemReplaced(ItemSlot<T> repalcedItem, ItemSlot<T> previousItem, int indexReplaced);
+        public delegate void ItemRemoved(T item, int stackRemoved, bool stackOnly);
+        public delegate void ItemSwapped(T itemA, T itemB);
+        public delegate void ItemReplaced(T repalcedItem, T previousItem, int indexReplaced);
 
         #endregion
 
         /// <summary>
         /// Contains references to all the slots in the inventory
         /// </summary>
-        public ItemSlot<T>[] slots;
+        public List<T> slots;
 
         //Only one event is raised per operation
         //i.e neither 'onItemAdded' nor 'onItemRemoved' will be raised when 'InsertItem(InventoryItem)' is called
+
         #region Events
         /// <summary>
         /// Raised when a new item is added to the inventory
@@ -173,111 +143,66 @@ namespace CsUtils.Systems.Inventory
 
         //All kinds of constructors are available for simplicity
         #region Constructors
-        /// <summary>
-        /// Instantiates a new inventory with predefined items<br></br>
-        /// Not resizeable once set
-        /// </summary>
-        /// <param name="items">The array of inventory items to add</param>
-        public Inventory(ItemSlot<T>[] items) => slots = items;
 
         /// <summary>
-        /// Instantiates a new inventory with predefined items<br></br>
-        /// Not resizeable once set
+        /// Instantiates a new inventory with predefined items
         /// </summary>
         /// <param name="items">The items to add</param>
-        public Inventory(IEnumerable<T> items)
+        /// <param name="cloneItems">Whether to clone the items before adding them</param>
+        public Inventory(IEnumerable<T> items, bool cloneItems = false)
         {
-            slots = new ItemSlot<T>[items.Count()];
+            slots = new List<T>();
 
             for (int i = 0; i < items.Count(); i++)
             {
                 T item = items.ElementAt(i);
-                slots[i].item = item;
-                slots[i].stack = 1;
+                item.stack = 1;
+
+                T finalItem = cloneItems ? item.Clone() : item;
+                slots.Add(finalItem);
+                finalItem.slot = i;
             }
         }
 
         /// <summary>
         /// Instantiates a new inventory with predefined amount of slots<br></br>
-        /// Not resizeable once set
         /// </summary>
         /// <param name="slotCount">The maximum amount of slots the inventory has</param>
-        public Inventory(int slotCount) => slots = new ItemSlot<T>[slotCount];
+        public Inventory(int slotCount)
+        {
+            for (int i = 0; i < slotCount; i++)
+            {
+                slots.Add(null);
+            }
+        }
         #endregion
 
-        //Allows enumerating the inventory
-        #region Enumeration
+        //Handles all the queries of the inventory
+        //Note: Needs to be tested
+        #region Queries
+
+        /// <summary>
+        /// Used internally to check if an item is null
+        /// </summary>
+        /// <param name="item">The item to check</param>
+        internal bool CheckNull(T item)
+        {
+            return item == null || item.isNull;
+        }
 
         /// <summary>
         /// Simplify access to the array of items<br></br>
         /// Note: Changing the values of the array will cause the corresponding events to NOT be raised
         /// </summary>
-        public T this[int index] => slots[index].item;
+        public T this[int index] => slots[index];
 
         /// <summary>
         /// Gets the enumerator for the items
         /// </summary>
-        public IEnumerator<T> GetEnumerator()
-        {
-            List<T> items = new(slots.Length);
-
-            for (int i = 0; i < slots.Length; i++)
-            {
-                items[i] = slots[i].item;
-            }
-
-            return items.GetEnumerator();
-        }
+        public IEnumerator<T> GetEnumerator() => slots.GetEnumerator();
 
         // Explicit implementation of non-generic IEnumerable
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator(); 
-        }
-
-        #endregion
-
-        //Simplify the search for the slots of items in the inventory
-        //Note: Needs to be tested
-        #region Index Search
-        public int? FirstIndexOf(T item) => GetIndexes(item).FirstOrDefault();
-
-        public int? LastIndexOf(T item) => GetIndexes(item).LastOrDefault();
-
-        public int[] GetIndexes(T item) => StaticUtils.GetIndexesOf(slots, slots.Where(a => a.item.Equals(item)).ToArray());
-
-        /// <summary>
-        /// Gets the first index of the occurrences of an item
-        /// </summary>
-        /// <param name="item">The item to query</param>
-        /// <returns>The first index of the occurences of the queried item</returns>
-        public int? FirstIndexOf(ItemSlot<T> item) => GetIndexes(item).FirstOrDefault();
-
-        /// <summary>
-        /// Gets the last index of the occurrences of an item
-        /// </summary>
-        /// <param name="item">The item to query</param>
-        /// <returns>The last index of the occurences of the queried item</returns>
-        public int? LastIndexOf(ItemSlot<T> item) => GetIndexes(item).LastOrDefault();
-
-        /// <summary>
-        /// Gets all indexes of the occurrences of an item
-        /// </summary>
-        /// <param name="item">The item to query</param>
-        /// <returns>Indexes of the occurences of the queried item</returns>
-        public int[] GetIndexes(ItemSlot<T> item) => StaticUtils.GetIndexesOf(slots, slots.Where(a => a == item).ToArray());
-
-        /// <summary>
-        /// Checks whether the inventory contains the queried item
-        /// </summary>
-        /// <param name="item">The item to query</param>
-        public bool HasItem(T item) => FirstIndexOf(item).HasValue;
-
-        /// <summary>
-        /// Checks whether the inventory contains the queried item
-        /// </summary>
-        /// <param name="item">The item to query</param>
-        public bool HasItem(ItemSlot<T> item) => FirstIndexOf(item).HasValue;
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <summary>
         /// Gets all the indexes of the slots that have space for a given item
@@ -285,41 +210,35 @@ namespace CsUtils.Systems.Inventory
         /// <param name="item">The item to check for</param>
         /// <param name="prioritiseNull">Whether null indexes should be at the top or the bottom of the array</param>
         /// <returns>Indexes of the available slots</returns>
-        public int[] GetEmptyIndexes(T item, bool prioritiseNull = false)
+        public int[] GetStackableIndexes(T item, bool prioritiseNull = false)
         {
             List<int> result = new();
 
-            for (int i = 0; i < slots.Length; i++)
+            for (int i = 0; i < slots.Count; i++)
             {
-                ItemSlot<T> itemToCheck = slots[i];
+                T itemToCheck = slots[i];
 
-                if (itemToCheck.Equals(null) || (itemToCheck.Equals(item) && itemToCheck.stack < itemToCheck.maxStackSize))
+                if (CheckNull(itemToCheck) || (itemToCheck.Is(item) && itemToCheck.stack < itemToCheck.maxStack))
                     result.Add(i);
             }
 
-            return result.OrderBy(a => prioritiseNull ^ slots[a].Equals(null)).ToArray();
+            return result.OrderBy(a => prioritiseNull ^ CheckNull(slots[a])).ToArray();
         }
-
-        /// <summary>
-        /// Gets all the indexes of the slots that have space for a given item
-        /// </summary>
-        /// <param name="item">The item to check for</param>
-        /// <param name="prioritiseNull">Whether null indexes should be at the top or the bottom of the array</param>
-        /// <returns>Indexes of the available slots</returns>
-        public int[] GetEmptyIndexes(ItemSlot<T> item, bool prioritiseNull = false) => GetEmptyIndexes(item.item, prioritiseNull);
-        #endregion
 
         /// <summary>
         /// Inserts an item at the given slot
         /// </summary>
         /// <param name="item">The item to be inserted</param>
         /// <param name="index">The index at which the item will be inserted</param>
+        /// <param name="cloneItem">Whether the item to be inserted should be cloned</param>
         /// <returns>The item that was previously at the selected index</returns>
-        public ItemSlot<T> Replace(ItemSlot<T> item, int index)
+        public T Replace(T item, int index, bool cloneItem = true)
         {
-            ItemSlot<T> oldItem = slots.Replace(index, item);
+            T finalItem = cloneItem ? item.Clone() : item;
+            T oldItem = slots.Replace(index, finalItem);
 
-            onItemInserted?.Invoke(item, oldItem, index);
+            finalItem.slot = index;
+            onItemInserted?.Invoke(finalItem, oldItem, index);
 
             return oldItem;
         }
@@ -333,27 +252,31 @@ namespace CsUtils.Systems.Inventory
         {
             (slots[indexA], slots[indexB]) = (slots[indexB], slots[indexA]);
 
+            slots[indexA].slot = indexA;
+            slots[indexB].slot = indexB;
+
             //Since the indexes have been swapped, we need to swap them again when raising the event
             onItemSwapped?.Invoke(slots[indexB], slots[indexA]);
         }
+        #endregion
 
         #region Item Addition
         /// <summary>
-        /// Tries to add an item at the first available index
+        /// Tries to add an item at the first available index. Will clone the item if it cannot be stacked
         /// </summary>
         /// <param name="item">The item to add</param>
         /// <param name="prioritiseNull">Whether null indexes should be prioritised when searching for available indexes</param>
         /// <returns>Whether adding the item was successful</returns>
         public bool TryAdd(T item, bool prioritiseNull = false)
         {
-            int[] indexes = GetEmptyIndexes(item, prioritiseNull);
+            int[] indexes = GetStackableIndexes(item, prioritiseNull);
 
             if (!indexes.Any())
                 return false;
 
             int index = indexes.First();
 
-            if (!slots[index].Equals(null))
+            if (!CheckNull(slots[index]))
             {
                 slots[index].stack++;
 
@@ -361,8 +284,9 @@ namespace CsUtils.Systems.Inventory
             }
             else
             {
-                slots[index].item = item;
+                slots[index] = item.Clone();
                 slots[index].stack = 1;
+                slots[index].slot = index;
 
                 onItemAdded?.Invoke(slots[index], 1, false);
             }
@@ -370,16 +294,9 @@ namespace CsUtils.Systems.Inventory
             return true;
         }
 
-        /// <summary>
-        /// Tries to add an item at the first available index
-        /// </summary>
-        /// <param name="item">The item to add</param>
-        /// <param name="prioritiseNull">Whether null indexes should be prioritised when searching for available indexes</param>
-        /// <returns>Whether adding the item was successful</returns>
-        public bool TryAdd(ItemSlot<T> item, bool prioritiseNull = false) => TryAdd(item.item, prioritiseNull);
 
         /// <summary>
-        /// Adds a stack of items of the same type to the first available indexes
+        /// Adds a stack of items of the same type to the first available indexes. Will clone the item if it cannot be stacked
         /// </summary>
         /// <param name="item">The item to add</param>
         /// <param name="stack">The stack of that item to add</param>
@@ -388,6 +305,12 @@ namespace CsUtils.Systems.Inventory
         /// <returns>Whether all the items have been added</returns>
         public bool TryAdd(T item, int stack, out int amountLeft, bool prioritiseNull = false)
         {
+            if (stack <= 0)
+            {
+                amountLeft = 0;
+                return true; // Since there was nothing to add, we can consider it to be successfully added
+            }
+
             //If only a single stack is being added, there's no need for complex calculations
             if (stack == 1)
             {
@@ -397,7 +320,7 @@ namespace CsUtils.Systems.Inventory
                 return couldAdd;
             }
 
-            int[] indexes = GetEmptyIndexes(item, prioritiseNull);
+            int[] indexes = GetStackableIndexes(item, prioritiseNull);
 
             amountLeft = stack;
 
@@ -406,17 +329,18 @@ namespace CsUtils.Systems.Inventory
 
             for (int i = 0; i < indexes.Length; i++)
             {
-                if (!slots[indexes[i]].Equals(null))
+                if (!CheckNull(slots[indexes[i]]))
                 {
-                    int amountAdded = AddToStack(ref slots[indexes[i]], ref amountLeft);
+                    int amountAdded = AddToStack(slots[indexes[i]], ref amountLeft);
                     onItemAdded?.Invoke(slots[indexes[i]], amountAdded, true);
                 }
                 else
                 {
-                    slots[indexes[i]].item = item;
+                    slots[indexes[i]] = item.Clone();
                     slots[indexes[i]].stack = 0;
+                    slots[indexes[i]].slot = indexes[i];
 
-                    int amountAdded = AddToStack(ref slots[indexes[i]], ref amountLeft);
+                    int amountAdded = AddToStack(slots[indexes[i]], ref amountLeft);
                     onItemAdded?.Invoke(slots[indexes[i]], amountAdded, false);
                 }
 
@@ -426,9 +350,9 @@ namespace CsUtils.Systems.Inventory
             }
             return false;
 
-            static int AddToStack(ref ItemSlot<T> itemToAdd, ref int amountToAdd)
+            static int AddToStack(T itemToAdd, ref int amountToAdd)
             {
-                int amountAddable = CalculateAmountAddable(itemToAdd.maxStackSize, itemToAdd.stack, amountToAdd);
+                int amountAddable = CalculateAmountAddable(itemToAdd.maxStack, itemToAdd.stack, amountToAdd);
                 itemToAdd.stack += amountAddable;
 
                 amountToAdd -= amountAddable;
@@ -439,16 +363,6 @@ namespace CsUtils.Systems.Inventory
 
             static int CalculateAmountAddable(int itemMaxStack, int itemCurrentStack, int stackToAdd) => Mathf.Clamp(stackToAdd, 0, itemMaxStack - itemCurrentStack);
         }
-
-        /// <summary>
-        /// Adds a number of items of the same type to the first available indexes
-        /// </summary>
-        /// <param name="item">The item to add</param>
-        /// <param name="amount">The amount of that item to add</param>
-        /// <param name="amountLeft">The amount that couldn't be added</param>
-        /// <param name="prioritiseNull">Whether null indexes should be prioritised when searching for available indexes</param>
-        /// <returns>Whether all the items have been added</returns>
-        public bool TryAdd(ItemSlot<T> item, int amount, out int amountLeft, bool prioritiseNull = false) => TryAdd(item.item, amount, out amountLeft, prioritiseNull);
         #endregion
 
         #region Item Removal
@@ -456,47 +370,41 @@ namespace CsUtils.Systems.Inventory
         /// Removes the the select type of item from the inventory
         /// </summary>
         /// <param name="item">The item to remove</param>
-        /// <param name="removeAll">Whether to remove all occurences of that item</param>
-        public void Remove(ItemSlot<T> item, bool removeAll = false)
+        /// <param name="exactComparison">Whether to remove the reference to the item or its kind</param>
+        /// <returns>Whether removal was successful.</returns>
+        public bool Remove(T item, bool exactComparison = true)
         {
-            int[] indexes = GetIndexes(item);
-
-            if (indexes == null)
-                return;
-
-            RemoveFromIndexes(indexes, removeAll);
-        }
-
-
-        /// <summary>
-        /// Removes the the select type of item from the inventory
-        /// </summary>
-        /// <param name="item">The item to remove</param>
-        /// <param name="removeAll">Whether to remove all occurences of that item</param>
-        public void Remove(T item, bool removeAll = false)
-        {
-            int[] indexes = GetIndexes(item);
-
-            if (indexes == null) return;
-
-            RemoveFromIndexes(indexes, removeAll);
-        }
-
-        /// <summary>
-        /// Handles the removal of items from a given array of indexes. Used to avoid code repetition
-        /// </summary>
-        /// <param name="indexes">The indexes at which to remove the items</param>
-        /// <param name="removeAll">Whether to remove all the items</param>
-        protected void RemoveFromIndexes(int[] indexes, bool removeAll = false)
-        {
-            for (int i = 0; i < (removeAll ? indexes.Length : 1); i++)
+            if (!exactComparison)
             {
-                //Raise the event before the removal so that the proper value is passed
-                onItemRemoved?.Invoke(slots[indexes[i]], slots[indexes[i]].stack, false);
+                var removales = slots.Where(t => t.Is(item));
 
-                //Reset the index
-                slots[indexes[i]] = slots[indexes[i]].GetNull();
+                if (removales.Any())
+                {
+                    T toRemove = removales.First();
+
+                    if(toRemove.isUnitySerializable)
+                        toRemove.isNull = true;
+                    else
+                        slots[toRemove.slot] = null;
+
+                    onItemRemoved?.Invoke(toRemove, toRemove.stack, false);
+                    return true;
+                }
+
+                return false;
             }
+            else if(slots.Any(t => t == item))
+            {
+                if(item.isUnitySerializable)
+                    item.isNull = true;
+                else
+                    slots[item.slot] = null;
+
+                onItemRemoved?.Invoke(item, item.stack, false);
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -511,16 +419,20 @@ namespace CsUtils.Systems.Inventory
             if ((slots[index].stack -= amountToRemove) == 0)
             {
                 onItemRemoved?.Invoke(slots[index], amountToRemove, false);
-                slots[index] = slots[index].GetNull();
+
+                if (slots[index].isUnitySerializable)
+                    slots[index].isNull = true;
+                else
+                    slots[index] = null;
             }
             else
                 onItemRemoved?.Invoke(slots[index], amountToRemove, true);
         }
 
         /// <summary>
-        /// Removes a stack of items of the same type
+        /// Removes a stack of items of the same kind
         /// </summary>
-        /// <param name="item">The type of item to remove</param>
+        /// <param name="item">The kind of item to remove</param>
         /// <param name="stack">The stack to remove</param>
         public void Remove(T item, int stack)
         {
@@ -534,42 +446,33 @@ namespace CsUtils.Systems.Inventory
                 return;
             }
 
-            int[] indexes = GetIndexes(item);
+            var items = slots.Where(t => !CheckNull(t) && t.Is(item) ).ToList();
 
-            if (indexes == null)
-                return;
-
-            for (int i = 0; i < indexes.Length; i++)
+            foreach (var t in items)
             {
-                int currentIndex = indexes[i];
-
-                RemoveFromStack(currentIndex, ref stack);
-
-                //Reset index if all the stacks were removed
-                if (slots[currentIndex].stack == 0)
-                    slots[currentIndex] = slots[currentIndex].GetNull();
-
-                if (stack == 0)
-                    return;
+                RemoveFromStack(t, ref stack);
             }
 
-            int RemoveFromStack(int affectedIndex, ref int amountToRemove)
+            int RemoveFromStack(T affectedItem, ref int amountToRemove)
             {
-                int amountRemovable = Mathf.Clamp(stack, 0, slots[affectedIndex].stack);
-                slots[affectedIndex].stack -= amountRemovable;
+                int amountRemovable = Mathf.Clamp(stack, 0, affectedItem.stack);
+                affectedItem.stack -= amountRemovable;
 
                 amountToRemove -= amountRemovable;
 
                 //Reset index if all the stacks were removed
-                if (slots[affectedIndex].stack == 0)
+                if (affectedItem.stack == 0)
                 {
                     //Raise the event before the removal so that the proper value is passed
-                    onItemRemoved?.Invoke(slots[affectedIndex], amountRemovable, false);
+                    onItemRemoved?.Invoke(affectedItem, amountRemovable, false);
 
-                    slots[affectedIndex] = slots[affectedIndex].GetNull();
+                    if (affectedItem.isUnitySerializable)
+                        affectedItem.isNull = true;
+                    else
+                        slots[affectedItem.slot] = null;
                 }
                 else
-                    onItemRemoved?.Invoke(slots[affectedIndex], amountRemovable, true);
+                    onItemRemoved?.Invoke(affectedItem, amountRemovable, true);
 
 
                 //Return the amount that was added
