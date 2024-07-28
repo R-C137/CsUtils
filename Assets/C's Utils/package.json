@@ -1,0 +1,21 @@
+{
+  "name": "com.c137.csutils",
+  "version": "0.1.0",
+  "displayName": "C's Utils'",
+  "description": "C's Utils contains various QoL utilities mostly related to scripting",
+  "unity": "2019.1",
+  "hideInEditor": false,
+  "documentationUrl": "https://example.com/",
+  "changelogUrl": "https://example.com/changelog.html",
+  "licensesUrl": "https://github.com/R-C137/CsUtils/blob/main/LICENSE",
+  "keywords": [
+    "C's ",
+    "C's Utils",
+    "C137"
+  ],
+  "author": {
+    "name": "C137",
+    "email": "maurermasson.shaun@icloud.com",
+    "url": "https://github.com/R-C137"
+  }
+}

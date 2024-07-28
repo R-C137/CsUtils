@@ -1,0 +1,16 @@
+{
+    "name": "C137.CsUtils.Testing",
+    "rootNamespace": "",
+    "references": [
+        "GUID:f7b1ccae557750d498329e217627a8fa"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
