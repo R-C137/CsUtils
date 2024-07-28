@@ -22,6 +22,7 @@
  *                   - Fixed errors in meta data (C137)
  */
 
+using CsUtils.Extensions;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -102,7 +103,7 @@ namespace CsUtils.Systems.DataSaving
         {
             TryGetComponent(out slider);
 
-            foreach (Transform parent in StaticUtils.GetParents(slider.transform))
+            foreach (Transform parent in slider.transform.GetParents())
             {
                 id = $"{parent.name}.{id}";
             }

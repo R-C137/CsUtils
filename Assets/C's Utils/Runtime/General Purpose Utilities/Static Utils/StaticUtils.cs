@@ -38,9 +38,9 @@
  *      [01/05/2024] - Fixed grammatical mistakes in summaries (C137)
  *      [19/07/2024] - Added support for AutoLog system (C137)
  *      [23/07/2024] - Added an utility for moving a RectTransform to the mouse position (C137)
+ *      [28/07/2024] - Added a utility for whether checking a pointer is over a UI element (C137)
+ *                   - Moved transform extensions to their own class (C137)
  *      
- *  TODO:
- *      Add object pooling functionality to modal window
  */
 using CsUtils.Systems.Logging;
 using System;
@@ -50,6 +50,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using Debug = UnityEngine.Debug;
 
 namespace CsUtils
@@ -111,26 +112,6 @@ namespace CsUtils
 
             return result;
         }
-
-        /// <summary>
-        /// Returns all the parents of a transform
-        /// </summary>
-        /// <param name="child">The child whom to query for its parents</param>
-        /// <returns>An list of the parents of the child from closet to furthest</returns>
-        public static List<Transform> GetParents(Transform child)
-        {
-            List<Transform> parents = new();
-            Transform parent = child.parent;
-
-            while (parent != null)
-            {
-                parents.Add(parent);
-                parent = parent.parent;
-            }
-
-            return parents;
-        }
-
         /// <summary>
         /// Creates a new canvas with a modal window
         /// </summary>
@@ -203,9 +184,32 @@ namespace CsUtils
 
             rectTransform.position = canvas.transform.TransformPoint(movePos + offest);
         }
+
+        /// <summary>
+        /// Checks whether a specific pointer is over a UI element
+        /// </summary>
+        /// <param name="pointerId">The id of the pointer to query</param>
+        /// <param name="pointerPosition">The position of the pointer. Keep null to use default mouse position</param>
+        public static bool IsPointerOverUI(int pointerId = -1, Vector3? pointerPosition = null)
+        {
+            if (EventSystem.current.IsPointerOverGameObject(pointerId))
+                return true;
+
+            PointerEventData pe = new(EventSystem.current)
+            {
+                pointerId = pointerId,
+                position = pointerPosition == null ? Input.mousePosition : pointerPosition.Value
+            };
+
+            List<RaycastResult> results = new();
+            EventSystem.current.RaycastAll(pe, results);
+
+            return results.Count > 0;
+        }
     }
 }
 
+//Extensions that are only a few methods, don't need to have their own script
 namespace CsUtils.Extensions
 {
     public static class MethodBaseExtensions
