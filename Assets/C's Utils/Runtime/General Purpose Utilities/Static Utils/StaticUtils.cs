@@ -40,6 +40,8 @@
  *      [23/07/2024] - Added an utility for moving a RectTransform to the mouse position (C137)
  *      [28/07/2024] - Added a utility for whether checking a pointer is over a UI element (C137)
  *                   - Moved transform extensions to their own class (C137)
+ *
+ *      [31/07/2024] - Renamed 'MoveRectToMouse' to 'MoveUIToMouse' (C137)
  *      
  */
 using CsUtils.Systems.Logging;
@@ -115,7 +117,7 @@ namespace CsUtils
         /// <summary>
         /// Creates a new canvas with a modal window
         /// </summary>
-        /// <param name="modalQuestion">The question to diplay on the modal window</param>
+        /// <param name="modalQuestion">The question to display on the modal window</param>
         /// <param name="confirm">The callback when the confirm button is pressed</param>
         /// <param name="deny">The callback when the deny button is pressed</param>
         /// <param name="confirmButtonText">The text to show on the confirm button</param>
@@ -172,17 +174,17 @@ namespace CsUtils
         }
 
         /// <summary>
-        /// Moves a RectTransform to the mouse position
+        /// Moves a UI element to the mouse position
         /// </summary>
-        /// <param name="rectTransform">The RectTransform to move</param>
+        /// <param name="transform">The RectTransform to move</param>
         /// <param name="canvas">The canvas the RectTransform is part of</param>
         /// <param name="mousePosition">The position of the mouse</param>
-        /// <param name="offest">Offset of the final position</param>
-        public static void MoveRectToMouse(RectTransform rectTransform, Canvas canvas, Vector2 mousePosition, Vector2 offest)
+        /// <param name="offset">Offset of the final position</param>
+        public static void MoveUIToMouse(Transform transform, Canvas canvas, Vector2 mousePosition, Vector2 offset)
         {
             RectTransformUtility.ScreenPointToLocalPointInRectangle(canvas.transform as RectTransform, mousePosition, canvas.worldCamera, out Vector2 movePos);
 
-            rectTransform.position = canvas.transform.TransformPoint(movePos + offest);
+            transform.position = canvas.transform.TransformPoint(movePos + offset);
         }
 
         /// <summary>
@@ -198,7 +200,7 @@ namespace CsUtils
             PointerEventData pe = new(EventSystem.current)
             {
                 pointerId = pointerId,
-                position = pointerPosition == null ? Input.mousePosition : pointerPosition.Value
+                position = pointerPosition ?? Input.mousePosition
             };
 
             List<RaycastResult> results = new();

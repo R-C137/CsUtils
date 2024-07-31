@@ -25,19 +25,36 @@
  *      [19/07/2024] - Logger is no longer assgined in 'CsSettings' (C137)
  *      [22/07/2024] - Proper singleton implementation (C137)
  *                   - Updated execution order (C137)
+ *
+ *      [31/07/2024] - Added support for the context menu (C137)
  *      
  */
-using CsUtils.Systems.Logging;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using ILogger = CsUtils.Systems.Logging.ILogger;
 
 namespace CsUtils
 {
     [UnityEngine.DefaultExecutionOrder(-40), UnityEngine.ExecuteAlways]
     public class CsSettings : UnityEngine.MonoBehaviour
     {
+        [Serializable]
+        public struct ContextMenuData
+        {
+            /// <summary>
+            /// The actual prefab containing the context menu
+            /// </summary>
+            public UnityEngine.GameObject contextMenuPrefab;
+
+            /// <summary>
+            /// Prefab for each option
+            /// </summary>
+            public UnityEngine.GameObject optionPrefab;
+        }
+        
         /// <summary>
         /// What logger should C's Utilities use
         /// </summary>
@@ -48,6 +65,11 @@ namespace CsUtils
         /// </summary>
         public UnityEngine.GameObject modalWindowPrefab;
 
+        /// <summary>
+        /// The prefab to use for the context menu
+        /// </summary>
+        public ContextMenuData contextMenuData;
+        
         /// <summary>
         /// Where should the logging folder be found
         /// </summary>
