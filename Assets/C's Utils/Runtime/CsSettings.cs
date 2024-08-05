@@ -27,6 +27,7 @@
  *                   - Updated execution order (C137)
  *
  *      [31/07/2024] - Added support for the context menu (C137)
+ *      [05/08/2024] - Added support for a C's Utils Gameobject (C137)
  *      
  */
 
@@ -34,6 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using UnityEngine;
 using ILogger = CsUtils.Systems.Logging.ILogger;
 
 namespace CsUtils
@@ -59,6 +61,11 @@ namespace CsUtils
         /// What logger should C's Utilities use
         /// </summary>
         public ILogger logger;
+
+        /// <summary>
+        /// Reference to the gameobject used to hold required monobehaviour for static classes
+        /// </summary>
+        public static GameObject csUtilsGameobject;
 
         /// <summary>
         /// The prefab to use for the modal window

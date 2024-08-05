@@ -11,6 +11,8 @@
  * 
  * Changes: 
  *      [10/01/2024] - Initial implementation (C137)
+ *      [05/08/2024] - Unified monobehaviour creation (C137)
+ *                   - Delayed calls can now be cancelled (C137)
  */
 
 using System;
@@ -58,7 +60,7 @@ namespace CsUtils
         static CallDelay delayHandler;
 
         /// <summary>
-        /// All of the delayed calls to be made
+        /// All the delayed calls to be made
         /// </summary>
         internal static Dictionary<Action, ExecutionDelay> delayedCalls = new();
 
@@ -73,16 +75,19 @@ namespace CsUtils
         /// <param name="delay">How long in seconds should the delay be</param>
         /// <param name="callback">The function to call</param>
         /// <param name="executionOrder">At which execution order should the function be called</param>
-        public static void DelayedCall(float delay, Action callback, ExecutionOrder executionOrder = ExecutionOrder.Update)
+        public static Action DelayedCall(float delay, Action callback, ExecutionOrder executionOrder = ExecutionOrder.Update)
         {
             if (delayHandler == null)
             {
-                delayHandler = new GameObject("CsUtils~").AddComponent<CallDelay>();
+                delayHandler = (CsSettings.csUtilsGameobject ??= new GameObject("CsUtils~")).AddComponent<CallDelay>();
                 UnityEngine.Object.DontDestroyOnLoad(delayHandler);
             }
 
-            delayedCalls.Add(SingularizeAction(callback), new ExecutionDelay(delay, executionOrder));
+            Action singleAction = SingularizeAction(callback);
+            delayedCalls.Add(singleAction, new ExecutionDelay(delay, executionOrder));
 
+            return singleAction;
+            
             Action SingularizeAction(Action action)
             {
                 return () =>
@@ -91,6 +96,16 @@ namespace CsUtils
                     action();
                 };
             }
+        }
+
+        /// <summary>
+        /// Cancels a delayed call
+        /// </summary>
+        /// <param name="call">The call to cancel</param>
+        /// <returns>Whether the call could be cancelled</returns>
+        public static bool CancelDelayedCall(Action call)
+        {
+            return delayedCalls.Remove(call);
         }
     }
 
