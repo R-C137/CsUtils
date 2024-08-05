@@ -1,16 +1,16 @@
-/* StaticUtils.Input.cs - C's Utils
+/* InputQuery.cs - C's Utils
  * 
  * Offers utilities for Unity's (old) Input system
  * 
  * 
- * Creation Date: 10/01/2024
+ * Creation Date: 04/08/2024
  * Authors: C137
  * Original: C137
  * 
  * Edited By: C137
  * 
  * Changes: 
- *      [10/01/2024] - Initial implementation (C137)
+ *      [04/08/2024] - Initial implementation (C137)
  */
 
 using System;
