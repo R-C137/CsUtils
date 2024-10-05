@@ -68,7 +68,8 @@ namespace CsUtils.Extensions
         }
 
         /// <summary>
-        /// Gets a random element from an IEnumerable
+        /// Gets a random element from an IEnumerable<br></br>
+        /// Will iterate twice if no weights are passed
         /// </summary>
         /// <typeparam name="T">The type of the enumerable</typeparam>
         /// <param name="enumerable">The IEnumerable on which the operation shall take place</param>
@@ -84,7 +85,8 @@ namespace CsUtils.Extensions
             {
                 WeightedNumber[] weights = new WeightedNumber[enumerable.Count()];
 
-                for (int i = 0; i < enumerable.Count(); i++)
+                int count = enumerable.Count();
+                for (int i = 0; i < count; i++)
                 {
                     weights[i] = new WeightedNumber()
                     {
