@@ -13,6 +13,7 @@
  *      [10/05/2024] - Initial implementation (C137)
  *      [22/07/2024] - Proper singleton implementation (C137)
  *      [28/07/2024] - Added singleton check when unsubscribing ticks (C137)
+ *      [26/10/2024] - Added support for non-integer tick rates (C137)
  *      
  */
 using System;
@@ -33,14 +34,14 @@ namespace CsUtils.Systems.Tick
             /// <summary>
             /// The tick rate at which to execute the callback
             /// </summary>
-            public int tickRate;
+            public float tickRate;
 
             /// <summary>
             /// The last tick at which the callback was called
             /// </summary>
-            public int lastTick;
+            public float lastTick;
 
-            public Tickable(Action callback, int tickRate)
+            public Tickable(Action callback, float tickRate)
             {
                 this.callback = callback;
                 this.tickRate = tickRate;
@@ -52,23 +53,31 @@ namespace CsUtils.Systems.Tick
         /// <summary>
         /// How many ticks should be done in one second
         /// </summary>
-        public int globalTickRate = 60;
+        public float globalTickRate = 60;
 
+        /// <summary>
+        /// The maximum value that the elapsed tick will reach before resetting
+        /// </summary>
+        private float maxTickRate;
+        
         /// <summary>
         /// The amount of ticks that have elapsed so far
         /// </summary>
         public float elapsedTicks;
 
-#pragma warning disable IDE0044 // Add readonly modifier
         /// <summary>
         /// Reference to all the tickables subscribed
         /// </summary>
         List<Tickable> tickables = new();
-#pragma warning restore IDE0044 // Add readonly modifier
 
         private void Awake()
         {
             Singleton.Create(this);
+        }
+
+        private void Start()
+        {
+            maxTickRate = globalTickRate * 10;
         }
 
         public void Update()
@@ -83,18 +92,25 @@ namespace CsUtils.Systems.Tick
         /// </summary>
         void CallTicks()
         {
-            //If a the ticker has just started or has been reset, no tickable should be called
-            if (Mathf.RoundToInt(elapsedTicks) == 0)
+            // Ensure that elapsedTicks wraps to 0 if it exceeds the maximum value 
+            float wrappedElapsedTicks = elapsedTicks % maxTickRate;
+
+            if (Mathf.Approximately(wrappedElapsedTicks, 0f))
                 return;
 
             foreach (var tickable in tickables)
             {
+                float tickDifference = wrappedElapsedTicks >= tickable.lastTick
+                    ? wrappedElapsedTicks - tickable.lastTick
+                    : (wrappedElapsedTicks + maxTickRate) - tickable.lastTick;
 
-                if (tickable.lastTick != Mathf.RoundToInt(elapsedTicks) && Mathf.RoundToInt(elapsedTicks % tickable.tickRate) == 0)
-                {
-                    tickable.lastTick = Mathf.RoundToInt(elapsedTicks);
-                    tickable.callback();
-                }
+                // Skip if the difference is less than tickRate
+                if (tickDifference < tickable.tickRate)
+                    continue;
+
+                // Update lastTick and call the callback function
+                tickable.lastTick = wrappedElapsedTicks;
+                tickable.callback();
             }
         }
 
@@ -103,18 +119,19 @@ namespace CsUtils.Systems.Tick
         /// </summary>
         void UpdateTick()
         {
-            if (elapsedTicks >= globalTickRate * 10)
-                elapsedTicks = 0;
-
             elapsedTicks += 60 * Time.deltaTime;
+            
+            if (elapsedTicks >= maxTickRate)
+                elapsedTicks = 0;
         }
+        
 
         /// <summary>
         /// Subscribe a callback to the tick system
         /// </summary>
         /// <param name="tickRate">The tick rate at which the callback should be called<br>Cannot be more than 10x the global tick rate</br></param>
         /// <param name="callback">The callback to execute at the given tick rate</param>
-        public static void SubscribeTick(int tickRate, Action callback)
+        public static void SubscribeTick(float tickRate, Action callback)
         {
             Singleton.Get<Ticker>().tickables.Add(new(callback, tickRate));
         }
