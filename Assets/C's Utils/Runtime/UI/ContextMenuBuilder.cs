@@ -11,6 +11,7 @@
  *
  * Changes:
  *      [31/07/2024] - Initial implementation (C137)
+ *      [22/11/2024] - Added support for default values from 'CsSettings' (C137)
  *
  *
  * TODO:
@@ -74,14 +75,13 @@ namespace CsUtils
         /// </summary>
         public void Build(Vector3? mousePosition = null, Vector3? offset = null)
         {
-            var contextMenuData = Singleton.Get<CsSettings>().contextMenuData;
-            GameObject contextMenu = Object.Instantiate(contextMenuData.contextMenuPrefab);
+            GameObject contextMenu = Object.Instantiate(Singleton.Get<CsSettings>().contextMenuPrefab);
 
             Transform optionsParent = contextMenu.transform.GetChild(0).GetChild(0).GetChild(0).GetChild(0);
 
             foreach (var option in options)
             {
-                var optionObject = Object.Instantiate(contextMenuData.optionPrefab, optionsParent, false);
+                var optionObject = Object.Instantiate(Singleton.Get<CsSettings>().optionPrefab, optionsParent, false);
                 optionObject.GetComponent<Button>().onClick.AddListener(() =>
                 {
                     option.callback?.Invoke();

@@ -28,6 +28,7 @@
  *
  *      [31/07/2024] - Added support for the context menu (C137)
  *      [05/08/2024] - Added support for a C's Utils Gameobject (C137)
+ *      [22/11/2024] - Singleton values are now properly set in the editor (C137)
  *      
  */
 
@@ -36,6 +37,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Serialization;
 using ILogger = CsUtils.Systems.Logging.ILogger;
 
 namespace CsUtils
@@ -43,6 +45,16 @@ namespace CsUtils
     [UnityEngine.DefaultExecutionOrder(-40), UnityEngine.ExecuteAlways]
     public class CsSettings : UnityEngine.MonoBehaviour
     {
+        /// <summary>
+        /// The raw default path to use for the logging file.
+        /// </summary>
+        public static readonly string defaultRawLoggingFilePath = Path.Combine("%appdata%", "%unity.companyName%", "%unity.productName%", "Logging", "latest.log");
+        
+        /// <summary>
+        /// The raw default path to use for the data-saving folder.
+        /// </summary>
+        public static readonly string defaultRawDataSavingFolderPath = Path.Combine("%appdata%", "%unity.companyName%", "%unity.productName%", "Data", "Persistent Data.bin");
+        
         [Serializable]
         public struct ContextMenuData
         {
@@ -73,32 +85,59 @@ namespace CsUtils
         public UnityEngine.GameObject modalWindowPrefab;
 
         /// <summary>
-        /// The prefab to use for the context menu
+        /// The prefab containing the context menu
         /// </summary>
-        public ContextMenuData contextMenuData;
-        
-        /// <summary>
-        /// Where should the logging folder be found
-        /// </summary>
-        [UnityEngine.SerializeField]
-        string loggingFilePath;
+        public UnityEngine.GameObject contextMenuPrefab;
 
         /// <summary>
-        /// Where should all of the persistent game data be saved
+        /// Prefab for each option of the context menu
         /// </summary>
-        [UnityEngine.SerializeField]
-        string dataSavingPath;
+        public UnityEngine.GameObject optionPrefab;
+        
+        /// <summary>
+        /// The raw path of where the logging file should be found
+        /// </summary>
+        [FormerlySerializedAs("loggingFilePath"), InspectorName("Logging File Path")]
+        public string rawLoggingFilePath;
+
+        /// <summary>
+        /// The raw path of where the default data saving folder should be found
+        /// </summary>
+        [FormerlySerializedAs("dataSavingPath"), InspectorName("Data Saving Folder Path")]
+        public string rawDataSavingFolderPath;
 
         /// <summary>
         /// The full path of the logging file path
         /// </summary>
-        public string LoggingFilePath => Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(loggingFilePath));
+        public string loggingFilePath => Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(rawLoggingFilePath));
         
         /// <summary>
         /// The full file path of the data saving path
         /// </summary>
-        public string DataSavingPath => Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(dataSavingPath));
+        public string dataSavingFolderPath => Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(rawDataSavingFolderPath));
 
+        /// <summary>
+        /// Static accessor to the raw logging file path
+        /// </summary>
+        public static string RawLoggingFilePath
+        {
+            get
+            {
+                return Singleton.HasInstance<CsSettings>() ? Singleton.Get<CsSettings>().rawLoggingFilePath : defaultRawLoggingFilePath;
+            }
+        }
+
+        /// <summary>
+        /// Static accessor to the raw data saving folder path
+        /// </summary>
+        public static string RawDataSavingFolderPath
+        {
+            get
+            {
+                return Singleton.HasInstance<CsSettings>() ? Singleton.Get<CsSettings>().rawDataSavingFolderPath : defaultRawDataSavingFolderPath;
+            }
+        }
+        
         /// <summary>
         /// Shortcut to access the logger
         /// </summary>
@@ -107,7 +146,16 @@ namespace CsUtils
 
         private void Awake()
         {
+            if(Singleton.Get<CsSettings>() == this)
+                return; // Since reference was already set from the editor
+            
             Singleton.Create(this);
+        }
+
+        private void OnValidate()
+        {
+            if(Application.isEditor && !Singleton.HasInstance<CsSettings>())
+                Singleton.Create(this);
         }
 
         /// <summary>
@@ -133,8 +181,8 @@ namespace CsUtils
 
         private void Reset()
         {
-            loggingFilePath = Path.Combine("%appdata%", "%unity.companyName%", "%unity.productName%", "Logging", "latest.log");
-            dataSavingPath = Path.Combine("%appdata%", "%unity.companyName%", "%unity.productName%", "Data", "Persistent Data.bin");
+            rawLoggingFilePath = defaultRawLoggingFilePath;
+            rawDataSavingFolderPath = defaultRawDataSavingFolderPath;
         }
 
         private void OnDestroy()

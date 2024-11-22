@@ -291,7 +291,7 @@ GameObject:
   - component: {fileID: 7833385847857208888}
   - component: {fileID: 1079379239751544882}
   m_Layer: 5
-  m_Name: Context Menu Canvas
+  m_Name: Context Menu Default
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

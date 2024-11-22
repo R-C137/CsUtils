@@ -6,6 +6,10 @@ MonoImporter:
   defaultReferences:
   - modalWindowPrefab: {fileID: 6780223304321315598, guid: aeb83445252e4dd4abc311c7057b2ea5,
       type: 3}
+  - contextMenuPrefab: {fileID: 4137957826022346262, guid: 3475e1eb5514f8f4c9d0b507eee056cb,
+      type: 3}
+  - optionPrefab: {fileID: 1106835770429307975, guid: 6eed5f8ff0f70654a908221c8628f840,
+      type: 3}
   executionOrder: -40
   icon: {instanceID: 0}
   userData: 

@@ -1,4 +1,4 @@
-/* DataSectionSO.cs - C's Utils
+/* DataSectionSo.cs - C's Utils
  * 
  * A scriptable object used to define the various sections in which data is stored
  * 
@@ -15,21 +15,25 @@
  *      [17/04/2024] - Added support for environment variables in file paths (C137)
  *      [29/04/2024] - Updated code structure (C137)
  *                   - Data path is now only updated at runtime (C137)
+ *
+ *      [22/11/2024] - Fixed paths being changed at runtime (C137)
+ *                   - Improved variable naming (C137)
+ *                   - Updated field names (C137)
  */
 using System;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Serialization;
 namespace CsUtils.Systems.DataSaving
 {
     [CreateAssetMenu(fileName = "Data Section", menuName = "C's Utils/Data Saving/Data Section", order = 1)]
-    public class DataSectionSO : ScriptableObject
+    public class DataSectionSo : ScriptableObject
     {
-#pragma warning disable IDE1006 // Naming Styles
+
         /// <summary>
-        /// The path at which the data for this section will be stored
+        /// The expanded path at which the data for this section will be stored
         /// </summary>
         public string dataPath => GetDataPath();
-#pragma warning restore IDE1006 // Naming Styles
 
         /// <summary>
         /// The identifier with which this section will be accessible
@@ -37,39 +41,35 @@ namespace CsUtils.Systems.DataSaving
         public string sectionID;
 
         /// <summary>
-        /// Whether the data path has been updated with the environment variables and custom definitions
+        /// The data path, which has been updated with the environment variables and custom definitions.
         /// </summary>
-        public bool dataPathUpdated = false;
+        [NonSerialized]
+        private string updatedDataPath = string.Empty;
 
         /// <summary>
-        /// The actual holder for the path at which the data for this section will be stored
+        /// The raw, unexpanded data path where data will be stored for this section.
         /// </summary>
-        [SerializeField, InspectorName("Data Path")]
-        string _dataPath;
+        [FormerlySerializedAs("_dataPath"),SerializeField, InspectorName("Data Path")]
+        string rawDataPath;
 
         string GetDataPath()
         {
-            if (dataPathUpdated)
-                return _dataPath;
+            if (updatedDataPath != string.Empty)
+                return updatedDataPath;
 
             return UpdateDataPath();
         }
 
         string UpdateDataPath()
         {
-            if(Application.isPlaying)
-                dataPathUpdated = true;
+            updatedDataPath = Environment.ExpandEnvironmentVariables(Singleton.Get<CsSettings>().ReplaceCustomDefinitions(rawDataPath));
 
-            _dataPath = Environment.ExpandEnvironmentVariables(Singleton.Get<CsSettings>().ReplaceCustomDefinitions(_dataPath));
-
-            return _dataPath;
+            return updatedDataPath;
         }
 
         private void Reset()
         {
-            _dataPath = Path.Combine(
-                Singleton.HasInstance<CsSettings>() ? Path.GetDirectoryName(Singleton.Get<CsSettings>().DataSavingPath) : Path.Combine("%appddata%",
-                "%unity.companyName%", "%unity.productName%", "Data"), Guid.NewGuid().ToString() + ".bin");
+            rawDataPath = Path.Combine(CsSettings.RawDataSavingFolderPath, Guid.NewGuid() + ".bin");
         }
     }
 }
