@@ -5,9 +5,12 @@
   "description": "C's Utils contains various QoL utilities mostly related to scripting",
   "unity": "2019.1",
   "hideInEditor": false,
-  "documentationUrl": "https://example.com/",
-  "changelogUrl": "https://example.com/changelog.html",
+  "documentationUrl": "https://github.com/R-C137/CsUtils/wiki",
+  "changelogUrl": "https://github.com/R-C137/CsUtils",
   "licensesUrl": "https://github.com/R-C137/CsUtils/blob/main/LICENSE",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  },
   "keywords": [
     "C's ",
     "C's Utils",
