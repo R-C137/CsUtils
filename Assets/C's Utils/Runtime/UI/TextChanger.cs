@@ -15,6 +15,7 @@
  */
 using System;
 using System.Collections;
+using CsUtils.Modules.LeanTween;
 using TMPro;
 using UnityEngine;
 

@@ -18,6 +18,7 @@ using CsUtils;
 using CsUtils.UI;
 using System;
 using System.Collections;
+using CsUtils.Modules.LeanTween;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
