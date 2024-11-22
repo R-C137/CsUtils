@@ -25,6 +25,8 @@
  *                   - Singleton pattern is no longer done used inheritance (C137)
  *                   
  *      [22/07/2024] - No logs are printed when trying to remove a non-singleton instance (C137)
+ *      [22/11/2024] - Removed use of hash set (C137)
+ *                   - Adding the same instance as a singleton will no longer remove it (C137)
  *      
  */
 using CsUtils.Systems.Logging;
@@ -37,7 +39,6 @@ namespace CsUtils
     public static class Singleton
     {
         static Dictionary<Type, Component> instances = new();
-        static HashSet<Type> instanceHash = new();
 
         /// <summary>
         /// Declares a class as a singleton. Should be done on Awake()<br></br>
@@ -48,15 +49,17 @@ namespace CsUtils
         /// <returns>Whether the singleton was successfully created</returns>
         public static bool Create<T>(T instance) where T : Component
         {
-            if(!instanceHash.Add(typeof(T)))
+            if(!instances.TryAdd(typeof(T), instance))
             {
+                if(instances[typeof(T)] == instance)
+                    return true; // Since we're adding the same instance, it was already successfully created
+                
                 UnityEngine.Object.Destroy(instance);
                 StaticUtils.AutoLog($"Two or more instances of '{typeof(T).Name}' exist, a singleton should only have one instance. '{instance.gameObject.name}.{typeof(T).Name}' has been destroyed",
                                     LogSeverity.Warning, instance.gameObject);
                 return false;
             }    
 
-            instances.Add(typeof(T), instance);
 
             return true;
         }
@@ -77,8 +80,7 @@ namespace CsUtils
 
             return (T)instances[typeof(T)];
         }
-
-#pragma warning disable IDE0060 // Remove unused parameter
+        
         /// <summary>
         /// Removes a singleton from the declared list of singletons
         /// </summary>
@@ -90,9 +92,7 @@ namespace CsUtils
                 return;
 
             instances.Remove(typeof(T));
-            instanceHash.Remove(typeof(T));
         } 
-#pragma warning restore IDE0060 // Remove unused parameter
 
         static T SearchOrCreateInstance<T>() where T : Component
         {
@@ -124,7 +124,7 @@ namespace CsUtils
         /// <typeparam name="T">The type of the instance</typeparam>
         public static bool HasInstance<T>() where T : Component
         {
-            return instanceHash.Contains(typeof(T));
+            return instances.ContainsKey(typeof(T));
         }
     }
 }

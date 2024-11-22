@@ -240,9 +240,6 @@ namespace CsUtils.Systems.Logging
         
         void Awake()
         {
-            if(Singleton.Get<Logging>() == this)
-                return; // Since reference was already set from the editor
-            
             Singleton.Create(this);
         }
 

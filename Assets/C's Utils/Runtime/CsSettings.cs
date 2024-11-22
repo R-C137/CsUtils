@@ -146,9 +146,6 @@ namespace CsUtils
 
         private void Awake()
         {
-            if(Singleton.Get<CsSettings>() == this)
-                return; // Since reference was already set from the editor
-            
             Singleton.Create(this);
         }
 

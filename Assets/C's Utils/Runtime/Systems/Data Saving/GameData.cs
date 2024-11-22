@@ -67,8 +67,7 @@ namespace CsUtils.Systems.DataSaving
 
         void Awake()
         {
-            if(Singleton.Get<GameData>() != this) // Since reference was already set from the editor
-                Singleton.Create(this);
+            Singleton.Create(this);
 
             SetupDataSections();
         }
