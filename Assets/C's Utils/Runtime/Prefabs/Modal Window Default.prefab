@@ -897,7 +897,7 @@ GameObject:
   - component: {fileID: 7569195266982995444}
   - component: {fileID: 66195810525324348}
   m_Layer: 5
-  m_Name: Modal Window Canvas
+  m_Name: Modal Window Default
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

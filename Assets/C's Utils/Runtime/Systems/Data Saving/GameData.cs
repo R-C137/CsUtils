@@ -27,6 +27,11 @@
  *                   - Clash check is now done everytime data sections are modified (C137)
  *                   
  *      [22/07/2024] - Proper singleton implementation (C137)
+ *      [22/11/2024] - Improved clash handling (C137)
+ *                   - Fixed NullReferenceException on awake (C137)
+ *                   - Added verbosity to clashing errors (C137)
+ *                    - Singleton values are now properly set in the editor (C137)
+ * 
  */
 
 using CsUtils.Systems.Logging;
@@ -44,14 +49,13 @@ namespace CsUtils.Systems.DataSaving
         /// <summary>
         /// The different sections in which data is saved
         /// </summary>
-        public DataSectionSO[] dataSections;
+        public List<DataSectionSo> dataSections = new();
 
         /// <summary>
         /// The actual sections in which data is stored
         /// </summary>
         public static Dictionary<string, PersistentData> persistenDataSections = new();
-
-#pragma warning disable IDE1006 // Naming Styles
+        
         /// <summary>
         /// Event raised when the value of a persistent data from the default data section is updated
         /// </summary>
@@ -60,11 +64,11 @@ namespace CsUtils.Systems.DataSaving
             add => persistenDataSections["default"].onDataUpdated += value;
             remove => persistenDataSections["default"].onDataUpdated -= value;
         }
-#pragma warning restore IDE1006 // Naming Styles
 
         void Awake()
         {
-            Singleton.Create(this);
+            if(Singleton.Get<GameData>() != this) // Since reference was already set from the editor
+                Singleton.Create(this);
 
             SetupDataSections();
         }
@@ -76,12 +80,12 @@ namespace CsUtils.Systems.DataSaving
             persistenDataSections.Clear();
 
             if (Singleton.Get<CsSettings>())
-                persistenDataSections.Add("default", new PersistentData(Singleton.Get<CsSettings>().DataSavingPath));
+                persistenDataSections.Add("default", new PersistentData(Singleton.Get<CsSettings>().dataSavingFolderPath));
             else
                 StaticUtils.AutoLog("No instance of 'CsSettings' was found. Default path could not be added", LogSeverity.Warning);
 
             //Check for clashing section ids and paths
-            if (!ClashCheck())
+            if (ClashCheck())
                 return;
 
             //Initiate new data sections
@@ -92,55 +96,59 @@ namespace CsUtils.Systems.DataSaving
         }
 
         /// <summary>
-        /// Checks for clashing section ids and paths
+        /// Checks for clashing section ids and paths. Will attempt to remove duplicates if found to minimise clashes
         /// </summary>
+        /// <returns>Whether there were any clashes that couldn't be automatically resolved</returns>
         bool ClashCheck()
         {
-            HashSet<string> sectionIDs = new();
-            HashSet<string> sectionsPaths = new();
+            HashSet<DataSectionSo> currentDataSections = new();
 
-            List<string> clashingIDs = new();
-            List<string> clashingPaths = new();
+            HashSet<string> currentSectionIds = new();
+            HashSet<string> currentDataPaths = new();
 
-            foreach (var section in dataSections.Where(s => s != null))
+            Dictionary<string, DataSectionSo> clashingPaths = new();
+            Dictionary<string, DataSectionSo> clashingIds = new();
+            
+            bool clashed = false;
+            
+            foreach (DataSectionSo section in dataSections.Where(d => d != null).ToArray())
             {
-                if (!sectionIDs.Add(section.sectionID))
+                if(!currentDataSections.Add(section))
                 {
-                    if (!sectionsPaths.Add(section.dataPath))
+                    // Remove duplicates
+                    dataSections[dataSections.LastIndexOf(section)] = null;
+                    StaticUtils.AutoLog("A duplicate data section was found and removed. No duplicates are allowed as data sections", LogSeverity.Info, this);
+                    continue;
+                }
+
+                if(!currentSectionIds.Add(section.sectionID))
+                {
+                    if(currentDataPaths.Contains(section.dataPath))
                     {
-                        //If both section id and path are clashing, we can safely remove one of them
-                        persistenDataSections.Remove(section.sectionID);
-                        goto defaultClashCheck;
+                        dataSections.Remove(section); // Since IDs and paths match, we can remove this one as it is a duplicate
+                        
+                        StaticUtils.AutoLog("A duplicate data section was found and removed. No duplicates are allowed as data sections", LogSeverity.Info, this);
+                        continue;
                     }
-                    clashingIDs.Add(section.sectionID);
-                    goto defaultClashCheck;
+
+                    clashed = true;
+                    clashingIds.Add(section.sectionID, section);
                 }
 
-                if (!sectionsPaths.Add(section.dataPath))
+                if(!currentDataPaths.Add(section.dataPath))
                 {
-                    clashingPaths.Add(section.dataPath);
+                    clashed = true;
+                    clashingPaths.Add(section.dataPath, section);
                 }
-
-                defaultClashCheck:
-                if (section.dataPath == persistenDataSections["default"].dataPath)
-                    StaticUtils.AutoLog("Data section with id {0} cannot be set to the default persistent data path", LogSeverity.Warning, parameters: section.sectionID);
             }
 
-            if (clashingIDs.Any())
-                StaticUtils.AutoLog("Found clashing ids for data saving {0}, " + (Application.isPlaying ? "removing script" : "script will be removed at runtime"), LogSeverity.Warning, gameObject, parameters: sectionIDs);
-
-            if (clashingPaths.Any())
-                StaticUtils.AutoLog("Found clashing paths for data saving {0}, " + (Application.isPlaying ? "removing script" : "script will be removed at runtime"), LogSeverity.Error, gameObject, parameters: sectionIDs);
-
-            if (clashingIDs.Any() || clashingPaths.Any())
+            if(clashed)
             {
-                if(Application.isPlaying)
-                    Destroy(this);
-
-                return false;
+                StaticUtils.AutoLog("Clashing IDs, {0}, were found from, {0}, respectively. The data saving system will not work as intended", LogSeverity.Error, parameters: new object[] { clashingIds.Keys, clashingIds.Values });
+                StaticUtils.AutoLog("Clashing paths, {0}, were found from, {0}, respectively. The data saving system will not work as intended", LogSeverity.Error, parameters: new object[] { clashingPaths.Keys, clashingPaths.Values });
             }
 
-            return true;
+            return clashed;
         }
 
         /// <summary>
@@ -263,6 +271,8 @@ namespace CsUtils.Systems.DataSaving
         private void OnValidate()
         {
             SetupDataSections();
+            if(Application.isEditor && !Singleton.HasInstance<GameData>())
+                Singleton.Create(this);
         }
 
         private void OnDestroy()
