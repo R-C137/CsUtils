@@ -71,6 +71,13 @@ namespace CsUtils.Systems.DataSaving
 
             SetupDataSections();
         }
+        
+        private void Update()
+        {
+            // Recreate singleton in case assemblies were recompiled
+            if(!Application.isPlaying)
+                Singleton.Create(this);
+        }
 
         //Properly setups the data sections and handles clashing
         void SetupDataSections()
@@ -78,8 +85,10 @@ namespace CsUtils.Systems.DataSaving
             //Add the base path data saving path as the default one
             persistenDataSections.Clear();
 
-            if (Singleton.Get<CsSettings>())
-                persistenDataSections.Add("default", new PersistentData(Singleton.Get<CsSettings>().dataSavingFolderPath));
+            Singleton.TryGet(out CsSettings csSettings);
+            
+            if (csSettings != null)
+                persistenDataSections.Add("default", new PersistentData(csSettings.dataSavingFolderPath));
             else
                 StaticUtils.AutoLog("No instance of 'CsSettings' was found. Default path could not be added", LogSeverity.Warning);
 
@@ -270,8 +279,6 @@ namespace CsUtils.Systems.DataSaving
         private void OnValidate()
         {
             SetupDataSections();
-            if(Application.isEditor && !Singleton.HasInstance<GameData>())
-                Singleton.Create(this);
         }
 
         private void OnDestroy()

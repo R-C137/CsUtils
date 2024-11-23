@@ -60,6 +60,8 @@
  *
  *      [22/11/2024] - Singleton values are now properly set in the editor (C137)
  *                   - Singleton reference to 'CsSettings' is now cached (C137)
+ *
+ *      [23/11/2024] - Fixed singleton access (C137)
  *      
  */
 using CsUtils.Extensions;
@@ -188,12 +190,6 @@ namespace CsUtils.Systems.Logging
     public class Logging : MonoBehaviour, ILogger
     {
         /// <summary>
-        /// Reference to the settings class for ease of access
-        /// </summary>
-        [HideInInspector]
-        public CsSettings settings;
-        
-        /// <summary>
         /// The color-coding for each of the logs
         /// </summary>
         public LogColors logColors;
@@ -248,18 +244,18 @@ namespace CsUtils.Systems.Logging
             SetupLogging();
         }
 
-        private void OnValidate()
+        private void Update()
         {
-            if(Application.isEditor && !Singleton.HasInstance<Logging>())
+            // Recreate singleton in case assemblies were recompiled
+            if(!Application.isPlaying)
                 Singleton.Create(this);
         }
-
+        
+        
         void SetupLogging()
         {
-            settings = settings == null ? (Singleton.HasInstance<CsSettings>() ? Singleton.Get<CsSettings>() : null) : settings;
-            
-            if(settings == null)
-                LogToConsole("No instance of 'CsSettings' could be found. Default logger could not be set. Please manually set the reference to 'CsSettings'", LogSeverity.Warning, this);
+            if(!Singleton.HasInstance<CsSettings>() )
+                LogToConsole("No instance of 'CsSettings' could be found. Default logger could not be set. Pleasure ensure 'CsSettings' is present in the scene before continuing", LogSeverity.Warning, this);
             
             CompressLogFile();
 
@@ -284,21 +280,21 @@ namespace CsUtils.Systems.Logging
         /// <param name="showError">Whether to debug any errors that occur(internal use only)</param>
         protected virtual void CompressLogFile(bool showError = true)
         {
-            if (settings == null)
+            if (!Singleton.TryGet(out CsSettings csSettings))
             {
                 LogToConsole("No instance of 'CsSettings' could be found. Logs files could not be compressed", LogSeverity.Warning);
                 return;
             }
-
-            if (!Directory.Exists(Path.GetDirectoryName(settings.loggingFilePath)))
+            
+            if (!Directory.Exists(Path.GetDirectoryName(csSettings.loggingFilePath)))
                 return;
 
-            if (!File.Exists(settings.loggingFilePath))
+            if (!File.Exists(csSettings.loggingFilePath))
                 return;
 
             try
             {
-                using FileStream stream = File.Open(settings.loggingFilePath, FileMode.Open, FileAccess.Read, FileShare.None);
+                using FileStream stream = File.Open(csSettings.loggingFilePath, FileMode.Open, FileAccess.Read, FileShare.None);
                 stream.Close();
             }
             catch (IOException)
@@ -318,7 +314,7 @@ namespace CsUtils.Systems.Logging
             string zipFileName = DateTime.Now.ToString("dd-MM-yyyy");
 
             int count = 0;
-            while (File.Exists(Path.Combine(Path.GetDirectoryName(settings.loggingFilePath), zipFileName + ".zip")))
+            while (File.Exists(Path.Combine(Path.GetDirectoryName(csSettings.loggingFilePath), zipFileName + ".zip")))
             {
                 if (count == int.MaxValue)
                 {
@@ -333,18 +329,18 @@ namespace CsUtils.Systems.Logging
 
             try
             {
-                using (var zipArchive = ZipFile.Open(Path.Combine(Path.GetDirectoryName(settings.loggingFilePath), zipFileName + ".zip"), ZipArchiveMode.Create))
+                using (var zipArchive = ZipFile.Open(Path.Combine(Path.GetDirectoryName(csSettings.loggingFilePath), zipFileName + ".zip"), ZipArchiveMode.Create))
                 {
                     // Add the source file to the zip archive
-                    zipArchive.CreateEntryFromFile(settings.loggingFilePath, Path.GetFileName(settings.loggingFilePath));
+                    zipArchive.CreateEntryFromFile(csSettings.loggingFilePath, Path.GetFileName(csSettings.loggingFilePath));
                 }   
 
                 logFileCompressed = true;
             }
             catch (IOException)
             {
-                if (File.Exists(Path.Combine(Path.GetDirectoryName(settings.loggingFilePath), zipFileName + ".zip")))
-                    File.Delete(Path.Combine(Path.GetDirectoryName(settings.loggingFilePath), zipFileName + ".zip"));
+                if (File.Exists(Path.Combine(Path.GetDirectoryName(csSettings.loggingFilePath), zipFileName + ".zip")))
+                    File.Delete(Path.Combine(Path.GetDirectoryName(csSettings.loggingFilePath), zipFileName + ".zip"));
 
                 //Manually log to file so as to avoid recursion
                 if (showError)
@@ -523,7 +519,7 @@ namespace CsUtils.Systems.Logging
         /// <param name="skipCompressionCheck">Whether the file�s compressibility should be skipped</param>
         protected virtual void LogToFile(string log, bool skipCompressionCheck = false)
         {
-            if (settings == null)
+            if (!Singleton.HasInstance<CsSettings>())
             {
                 LogToConsole("No instance of 'CsSettings' could be found. Logs files could not be created", LogSeverity.Warning);
                 return;
@@ -567,13 +563,14 @@ namespace CsUtils.Systems.Logging
         /// <returns></returns>
         protected virtual FileStream GetLoggingFileStream()
         {
-            if (!Directory.Exists(Path.GetDirectoryName(settings.loggingFilePath)))
-                Directory.CreateDirectory(Path.GetDirectoryName(settings.loggingFilePath));
+            Singleton.TryGet(out CsSettings csSettings);
+            if (!Directory.Exists(Path.GetDirectoryName(csSettings.loggingFilePath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(csSettings.loggingFilePath));
 
-            if (File.Exists(settings.loggingFilePath) && canCompressLog)
-                return File.Open(settings.loggingFilePath, FileMode.Create, FileAccess.ReadWrite);
+            if (File.Exists(csSettings.loggingFilePath) && canCompressLog)
+                return File.Open(csSettings.loggingFilePath, FileMode.Create, FileAccess.ReadWrite);
 
-            return File.Open(settings.loggingFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            return File.Open(csSettings.loggingFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
         }
 
         /// <summary>

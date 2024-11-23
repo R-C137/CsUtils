@@ -143,15 +143,16 @@ namespace CsUtils
         /// </summary>
         public static ILogger Logger => Singleton.Get<CsSettings>().logger;
 
-
+        
         private void Awake()
         {
             Singleton.Create(this);
         }
-
-        private void OnValidate()
+        
+        private void Update()
         {
-            if(Application.isEditor && !Singleton.HasInstance<CsSettings>())
+            // Recreate singleton in case assemblies were recompiled
+            if(!Application.isPlaying)
                 Singleton.Create(this);
         }
 
