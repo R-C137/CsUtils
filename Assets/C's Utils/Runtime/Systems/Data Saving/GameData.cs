@@ -33,6 +33,7 @@
  *                   - Singleton values are now properly set in the editor (C137)
  *
  *      [23/11/2024] - Added support for saving scriptable objects (C137)
+ *                   - Fixed TryGet() throwing errors (C137)
  * 
  */
 
@@ -191,7 +192,9 @@ namespace CsUtils.Systems.DataSaving
             if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
                 return section.TryGet(id, out value);
 
-            throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
+            value = default;
+            
+            return false;
         }
 
         /// <summary>
