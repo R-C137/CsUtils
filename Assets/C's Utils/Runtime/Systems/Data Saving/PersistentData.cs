@@ -19,6 +19,8 @@
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using UnityEngine;
 
 namespace CsUtils.Systems.DataSaving
 {
@@ -167,7 +169,7 @@ namespace CsUtils.Systems.DataSaving
 
             using StreamReader sr = new(fs);
             data = JsonConvert.DeserializeObject<Dictionary<string, object>>(sr.ReadToEnd());
-
+            
             dataLoaded = true;
         }
 

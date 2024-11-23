@@ -30,7 +30,9 @@
  *      [22/11/2024] - Improved clash handling (C137)
  *                   - Fixed NullReferenceException on awake (C137)
  *                   - Added verbosity to clashing errors (C137)
- *                    - Singleton values are now properly set in the editor (C137)
+ *                   - Singleton values are now properly set in the editor (C137)
+ *
+ *      [23/11/2024] - Added support for saving scriptable objects (C137)
  * 
  */
 
@@ -39,6 +41,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Unity.Plastic.Newtonsoft.Json;
 using UnityEngine;
 
 namespace CsUtils.Systems.DataSaving
@@ -258,7 +261,7 @@ namespace CsUtils.Systems.DataSaving
         }
 
         /// <summary>
-        /// Fixes any type casting errors caused by the json de-serialization
+        /// Fixes any type casting errors caused by the json deserialization
         /// </summary>
         /// <typeparam name="T">The type that the value should be casted to</typeparam>
         /// <param name="value">The value to fix the casting of</param>
@@ -266,12 +269,24 @@ namespace CsUtils.Systems.DataSaving
         /// <returns>Whether a fix was applied</returns>
         public static bool FixTypeCasting<T>(object value, out T destination)
         {
+            // Properly change from double to float
             if (typeof(T) == typeof(float) && value is double)
             {
                 destination = (T)Convert.ChangeType(value, typeof(T));
                 return true;
             }
 
+            // Support for scriptable objects
+            if(typeof(ScriptableObject).IsAssignableFrom(typeof(T)))
+            {
+                ScriptableObject scriptableObject = ScriptableObject.CreateInstance(typeof(T));
+
+                JsonConvert.PopulateObject(value.ToString(), scriptableObject);
+
+                destination = (T)Convert.ChangeType(scriptableObject, typeof(T));
+                return true;
+            }
+            
             destination = (T)value;
             return false;
         }
