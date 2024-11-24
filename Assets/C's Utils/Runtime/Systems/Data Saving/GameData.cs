@@ -34,6 +34,7 @@
  *
  *      [23/11/2024] - Added support for saving scriptable objects (C137)
  *                   - Fixed TryGet() throwing errors (C137)
+ *                   - Added support for data obfuscation (C137)
  * 
  */
 
@@ -47,6 +48,7 @@ using UnityEngine;
 
 namespace CsUtils.Systems.DataSaving
 {
+    
     [UnityEngine.DefaultExecutionOrder(-20), UnityEngine.ExecuteAlways]
     public class GameData : MonoBehaviour
     {
@@ -59,6 +61,11 @@ namespace CsUtils.Systems.DataSaving
         /// The actual sections in which data is stored
         /// </summary>
         public static Dictionary<string, PersistentData> persistenDataSections = new();
+
+        /// <summary>
+        /// The default obfuscator logic to use for all data sections
+        /// </summary>
+        public DataObfuscatorSo defaultObfuscator;
         
         /// <summary>
         /// Event raised when the value of a persistent data from the default data section is updated
@@ -92,7 +99,7 @@ namespace CsUtils.Systems.DataSaving
             Singleton.TryGet(out CsSettings csSettings);
             
             if (csSettings != null)
-                persistenDataSections.Add("default", new PersistentData(csSettings.dataSavingFolderPath));
+                persistenDataSections.Add("default", new PersistentData(csSettings.dataSavingFolderPath, dataObfuscator: defaultObfuscator));
             else
                 StaticUtils.AutoLog("No instance of 'CsSettings' was found. Default path could not be added", LogSeverity.Warning);
 
@@ -103,7 +110,9 @@ namespace CsUtils.Systems.DataSaving
             //Initiate new data sections
             foreach (var section in dataSections.Where(s => s != null))
             {
-                persistenDataSections.Add(section.sectionID, new PersistentData(section.dataPath));
+                IDataObfuscator obfuscator = section.dataObfuscator == null ? defaultObfuscator : section.dataObfuscator;
+                
+                persistenDataSections.Add(section.sectionID, new PersistentData(section.dataPath, dataObfuscator: obfuscator));
             }
         }
 

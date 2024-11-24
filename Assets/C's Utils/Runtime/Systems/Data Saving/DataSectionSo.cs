@@ -19,6 +19,8 @@
  *      [22/11/2024] - Fixed paths being changed at runtime (C137)
  *                   - Improved variable naming (C137)
  *                   - Updated field names (C137)
+ *
+ *      [23/11/2024] - Added support for data obfuscators (C137)
  */
 using System;
 using System.IO;
@@ -29,7 +31,6 @@ namespace CsUtils.Systems.DataSaving
     [CreateAssetMenu(fileName = "Data Section", menuName = "C's Utils/Data Saving/Data Section", order = 1)]
     public class DataSectionSo : ScriptableObject
     {
-
         /// <summary>
         /// The expanded path at which the data for this section will be stored
         /// </summary>
@@ -40,6 +41,12 @@ namespace CsUtils.Systems.DataSaving
         /// </summary>
         public string sectionID;
 
+        /// <summary>
+        /// The data obfuscator to use for this section. Leave null to use the default one from GameData
+        /// </summary>
+        [FormerlySerializedAs("obfuscator")]
+        public DataObfuscatorSo dataObfuscator;
+        
         /// <summary>
         /// The data path, which has been updated with the environment variables and custom definitions.
         /// </summary>
