@@ -3,7 +3,9 @@ guid: 205de6fe18892d743b722dee844953f3
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - defaultObfuscator: {fileID: 11400000, guid: 7357437807da5784db983b3970a1b93c,
+      type: 2}
   executionOrder: -20
   icon: {instanceID: 0}
   userData: 

@@ -9,11 +9,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ddf5884116bfe54ebd49d6cd616c9aa, type: 3}
-  m_Name: Test Item 1
+  m_Script: {fileID: 11500000, guid: c2f69ca4aba047c4ac1e8cf7b65b43fb, type: 3}
+  m_Name: No Obfuscation
   m_EditorClassIdentifier: 
-  id: 1
-  <isNull>k__BackingField: 0
-  <stack>k__BackingField: 0
-  <slot>k__BackingField: 0
-  <isUnitySerializable>k__BackingField: 0

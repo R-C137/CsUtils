@@ -29,6 +29,7 @@
  *      [31/07/2024] - Added support for the context menu (C137)
  *      [05/08/2024] - Added support for a C's Utils Gameobject (C137)
  *      [22/11/2024] - Singleton values are now properly set in the editor (C137)
+ *      [24/11/2024] - Updated variable names (C137)
  *      
  */
 
@@ -51,9 +52,9 @@ namespace CsUtils
         public static readonly string defaultRawLoggingFilePath = Path.Combine("%appdata%", "%unity.companyName%", "%unity.productName%", "Logging", "latest.log");
         
         /// <summary>
-        /// The raw default path to use for the data-saving folder.
+        /// The raw default path to use for the data-saving file.
         /// </summary>
-        public static readonly string defaultRawDataSavingFolderPath = Path.Combine("%appdata%", "%unity.companyName%", "%unity.productName%", "Data", "Persistent Data.bin");
+        public static readonly string defaultRawDataSavingFilePath = Path.Combine("%appdata%", "%unity.companyName%", "%unity.productName%", "Data", "Persistent Data.bin");
         
         [Serializable]
         public struct ContextMenuData
@@ -114,7 +115,7 @@ namespace CsUtils
         /// <summary>
         /// The full file path of the data saving path
         /// </summary>
-        public string dataSavingFolderPath => Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(rawDataSavingFolderPath));
+        public string dataSavingFilePath => Environment.ExpandEnvironmentVariables(ReplaceCustomDefinitions(rawDataSavingFolderPath));
 
         /// <summary>
         /// Static accessor to the raw logging file path
@@ -134,7 +135,7 @@ namespace CsUtils
         {
             get
             {
-                return Singleton.HasInstance<CsSettings>() ? Singleton.Get<CsSettings>().rawDataSavingFolderPath : defaultRawDataSavingFolderPath;
+                return Singleton.HasInstance<CsSettings>() ? Singleton.Get<CsSettings>().rawDataSavingFolderPath : defaultRawDataSavingFilePath;
             }
         }
         
@@ -180,7 +181,7 @@ namespace CsUtils
         private void Reset()
         {
             rawLoggingFilePath = defaultRawLoggingFilePath;
-            rawDataSavingFolderPath = defaultRawDataSavingFolderPath;
+            rawDataSavingFolderPath = defaultRawDataSavingFilePath;
         }
 
         private void OnDestroy()

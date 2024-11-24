@@ -18,23 +18,26 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 
-///Add a more comprehensible name to it that cannot be used as the class declaration name
-[AddComponentMenu("Scripts/3D Button")]
-public class ObjectButton : MonoBehaviour
+namespace CsUtils
 {
-    /// <summary>
-    /// Whether the object should be clickable through the UI
-    /// </summary>
-    public bool bypassUI;
-
-    /// <summary>
-    /// Callback to when the button is clicked
-    /// </summary>
-    public UnityEvent onClick;
-
-    private void OnMouseUpAsButton()
+    ///Add a more comprehensible name to it that cannot be used as the class declaration name
+    [AddComponentMenu("Scripts/3D Button")]
+    public class ObjectButton : MonoBehaviour
     {
-        if(bypassUI || !EventSystem.current.IsPointerOverGameObject())
-            onClick?.Invoke();
+        /// <summary>
+        /// Whether the object should be clickable through the UI
+        /// </summary>
+        public bool bypassUI;
+
+        /// <summary>
+        /// Callback to when the button is clicked
+        /// </summary>
+        public UnityEvent onClick;
+
+        private void OnMouseUpAsButton()
+        {
+            if(bypassUI || !EventSystem.current.IsPointerOverGameObject())
+                onClick?.Invoke();
+        }
     }
 }

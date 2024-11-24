@@ -15,13 +15,38 @@
  *      [05/01/2024] - Fixed 'float' and 'double' casting errors (C137)
  *                   - Added data removal support (C137)
  *                   - Added missing namespace (C137)
+ *
+ *      [23/11/2024] - Added support for data obfuscation (C137)
+ *      [24/11/2024] - Added methods for getting & settings raw file data (C137)
  */
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using UnityEngine;
 
 namespace CsUtils.Systems.DataSaving
 {
+    /// <summary>
+    /// Base interface for obfuscating data
+    /// </summary>
+    public interface IDataObfuscator
+    {
+        /// <summary>
+        /// Obfuscates json data before it is saved by the data-saving system
+        /// </summary>
+        /// <param name="jsonData">The json data to obfuscate</param>
+        /// <returns>The obfuscated json data</returns>
+        public byte[] Obfuscate(string jsonData);
+        
+        //// <summary>
+        /// Deobfuscates json data before it is loaded by the data-saving system
+        /// </summary>
+        /// <param name="obfuscatedJsonData">The json data to deobfuscate</param>
+        /// <returns>The deobfuscated json data</returns>
+        public string DeObfuscate(byte[] obfuscatedJsonData);
+    }
+    
     public class PersistentData
     {
         /// <summary>
@@ -29,7 +54,11 @@ namespace CsUtils.Systems.DataSaving
         /// </summary>
         public string dataPath;
 
-#pragma warning disable IDE1006 // Naming Styles
+        /// <summary>
+        /// The obfuscator logic to apply to data for this section
+        /// </summary>
+        public IDataObfuscator dataObfuscator;
+        
         /// <summary>
         /// All of the data available
         /// </summary>
@@ -42,17 +71,17 @@ namespace CsUtils.Systems.DataSaving
         /// <param name="data">The new value of the data</param>
         public delegate void DataUpdated(string id, object data);
         public event DataUpdated onDataUpdated;
-#pragma warning restore IDE1006 // Naming Styles
 
         /// <summary>
         /// Whether all of the data has been loaded
         /// </summary>
         bool dataLoaded;
 
-        public PersistentData(string dataPath, bool loadData = true)
+        public PersistentData(string dataPath, bool loadData = true, IDataObfuscator dataObfuscator = null)
         {
             this.dataPath = dataPath;
-
+            this.dataObfuscator = dataObfuscator;
+            
             if (loadData)
                 LoadData();
         }
@@ -156,6 +185,28 @@ namespace CsUtils.Systems.DataSaving
         }
 
         /// <summary>
+        /// Returns the raw bytes saved to this section
+        /// </summary>
+        /// <param name="fileStream">The filestream to use</param>
+        /// <returns></returns>
+        public byte[] GetRawData(FileStream fileStream = null)
+        {
+            bool closeStream = fileStream == null;
+            
+            fileStream ??= File.Open(dataPath, FileMode.Open, FileAccess.ReadWrite);
+
+            using MemoryStream memoryStream = new ();
+            
+            fileStream.CopyTo(memoryStream);  // Copy all bytes from fileStream to memoryStream
+            
+            if(closeStream)
+                fileStream.Close();
+            
+            return memoryStream.ToArray();    // Convert the memoryStream to byte array
+            
+        }
+        
+        /// <summary>
         /// Loads all of the saved data from disk
         /// </summary>W
         public void LoadData(bool forced = false)
@@ -163,11 +214,11 @@ namespace CsUtils.Systems.DataSaving
             if ((!forced && dataLoaded) || !Directory.Exists(Path.GetDirectoryName(dataPath)) || !File.Exists(dataPath))
                 return;
 
-            FileStream fs = File.Open(dataPath, FileMode.Open, FileAccess.ReadWrite);
+            using FileStream fs = File.Open(dataPath, FileMode.Open, FileAccess.ReadWrite);
 
-            using StreamReader sr = new(fs);
-            data = JsonConvert.DeserializeObject<Dictionary<string, object>>(sr.ReadToEnd());
-
+            byte[] obfuscatedJsonData = GetRawData(fs);
+            data = JsonConvert.DeserializeObject<Dictionary<string, object>>(dataObfuscator.DeObfuscate(obfuscatedJsonData));
+            
             dataLoaded = true;
         }
 
@@ -176,10 +227,26 @@ namespace CsUtils.Systems.DataSaving
         /// </summary>
         public void SaveData()
         {
-            using StreamWriter wr = new(GetDataFileStream());
             string json = JsonConvert.SerializeObject(data);
-            wr.Write(json);
+            SaveRawData(dataObfuscator.Obfuscate(json));
+        }
 
+        /// <summary>
+        /// Saves raw bytes to data of this section
+        /// </summary>
+        /// <param name="saveData">The bytes to save</param>
+        /// <param name="fileStream">The filestream to use</param>
+        public void SaveRawData(byte[] saveData, FileStream fileStream = null)
+        {
+            bool closeStream = fileStream == null;
+            
+            fileStream ??= GetDataFileStream();
+            
+            fileStream.Write(saveData);
+            
+            if (closeStream)
+                fileStream.Close();
+            
             FileStream GetDataFileStream()
             {
                 if (!Directory.Exists(Path.GetDirectoryName(dataPath)))
