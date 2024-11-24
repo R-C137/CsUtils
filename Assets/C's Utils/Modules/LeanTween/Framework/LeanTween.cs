@@ -145,103 +145,106 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 
-public enum TweenAction{
-    MOVE_X,
-    MOVE_Y,
-    MOVE_Z,
-    MOVE_LOCAL_X,
-    MOVE_LOCAL_Y,
-    MOVE_LOCAL_Z,
-    MOVE_CURVED,
-    MOVE_CURVED_LOCAL,
-    MOVE_SPLINE,
-    MOVE_SPLINE_LOCAL,
-    SCALE_X,
-    SCALE_Y,
-    SCALE_Z,
-    ROTATE_X,
-    ROTATE_Y,
-    ROTATE_Z,
-    ROTATE_AROUND,
-    ROTATE_AROUND_LOCAL,
-    CANVAS_ROTATEAROUND,
-    CANVAS_ROTATEAROUND_LOCAL,
-    CANVAS_PLAYSPRITE,
-    ALPHA,
-    TEXT_ALPHA,
-    CANVAS_ALPHA,
-    CANVASGROUP_ALPHA,
-    ALPHA_VERTEX,
-    COLOR,
-    CALLBACK_COLOR,
-    TEXT_COLOR,
-    CANVAS_COLOR,
-    CANVAS_MOVE_X,
-    CANVAS_MOVE_Y,
-    CANVAS_MOVE_Z,
-    CALLBACK,
-    MOVE,
-    MOVE_LOCAL,
-    MOVE_TO_TRANSFORM,
-    ROTATE,
-    ROTATE_LOCAL,
-    SCALE,
-    VALUE3,
-    GUI_MOVE,
-    GUI_MOVE_MARGIN,
-    GUI_SCALE,
-    GUI_ALPHA,
-    GUI_ROTATE,
-    DELAYED_SOUND,
-    CANVAS_MOVE,
-    CANVAS_SCALE,
-    CANVAS_SIZEDELTA,
-    FOLLOW,
-    NONE
-}
-
-public enum LeanTweenType{
-    notUsed, linear, easeOutQuad, easeInQuad, easeInOutQuad, easeInCubic, easeOutCubic, easeInOutCubic, easeInQuart, easeOutQuart, easeInOutQuart, 
-    easeInQuint, easeOutQuint, easeInOutQuint, easeInSine, easeOutSine, easeInOutSine, easeInExpo, easeOutExpo, easeInOutExpo, easeInCirc, easeOutCirc, easeInOutCirc, 
-    easeInBounce, easeOutBounce, easeInOutBounce, easeInBack, easeOutBack, easeInOutBack, easeInElastic, easeOutElastic, easeInOutElastic, easeSpring, easeShake, punch, once, clamp, pingPong, animationCurve
-}
-
-public enum LeanProp
-{
-    position,
-    localPosition,
-    x,
-    y,
-    z,
-    localX,
-    localY,
-    localZ,
-    scale,
-    color
-}
-
-/**
-* LeanTween is an efficient tweening engine for Unity3d<br /><br />
-* <a href="#index">Index of All Methods</a> | <a href="LTDescr.html">Optional Paramaters that can be passed</a><br /><br />
-* <strong id='optional'>Optional Parameters</strong> are passed at the end of every method<br /> 
-* <br />
-* <i>Example:</i><br />
-* LeanTween.moveX( gameObject, 1f, 1f).setEase( <a href="LeanTweenType.html">LeanTweenType</a>.easeInQuad ).setDelay(1f);<br />
-* <br />
-* You can pass the optional parameters in any order, and chain on as many as you wish!<br /><br />
-* You can also modify this tween later, just save the unique id of the tween.<br />
-* <h4>Example:</h4>
-* int id = LeanTween.moveX(gameObject, 1f, 1f).id;<br />
-* <a href="LTDescr.html">LTDescr</a> d = LeanTween.<a href="#method_LeanTween.descr">descr</a>( id );<br /><br />
-* if(d!=null){ <span style="color:gray">// if the tween has already finished it will return null</span><br />
-* <span style="color:gray">&#160;&#160; // change some parameters</span><br />
-* &#160;&#160; d.setOnComplete( onCompleteFunc ).setEase( <a href="LeanTweenType.html">LeanTweenType</a>.easeInOutBack );<br />
-* }
-*
-* @class LeanTween
-*/
 namespace CsUtils.Modules.LeanTween
 {
+    public enum TweenAction
+    {
+        MOVE_X,
+        MOVE_Y,
+        MOVE_Z,
+        MOVE_LOCAL_X,
+        MOVE_LOCAL_Y,
+        MOVE_LOCAL_Z,
+        MOVE_CURVED,
+        MOVE_CURVED_LOCAL,
+        MOVE_SPLINE,
+        MOVE_SPLINE_LOCAL,
+        SCALE_X,
+        SCALE_Y,
+        SCALE_Z,
+        ROTATE_X,
+        ROTATE_Y,
+        ROTATE_Z,
+        ROTATE_AROUND,
+        ROTATE_AROUND_LOCAL,
+        CANVAS_ROTATEAROUND,
+        CANVAS_ROTATEAROUND_LOCAL,
+        CANVAS_PLAYSPRITE,
+        ALPHA,
+        TEXT_ALPHA,
+        CANVAS_ALPHA,
+        CANVASGROUP_ALPHA,
+        ALPHA_VERTEX,
+        COLOR,
+        CALLBACK_COLOR,
+        TEXT_COLOR,
+        CANVAS_COLOR,
+        CANVAS_MOVE_X,
+        CANVAS_MOVE_Y,
+        CANVAS_MOVE_Z,
+        CALLBACK,
+        MOVE,
+        MOVE_LOCAL,
+        MOVE_TO_TRANSFORM,
+        ROTATE,
+        ROTATE_LOCAL,
+        SCALE,
+        VALUE3,
+        GUI_MOVE,
+        GUI_MOVE_MARGIN,
+        GUI_SCALE,
+        GUI_ALPHA,
+        GUI_ROTATE,
+        DELAYED_SOUND,
+        CANVAS_MOVE,
+        CANVAS_SCALE,
+        CANVAS_SIZEDELTA,
+        FOLLOW,
+        NONE
+    }
+
+    public enum LeanTweenType
+    {
+        notUsed, linear, easeOutQuad, easeInQuad, easeInOutQuad, easeInCubic, easeOutCubic, easeInOutCubic, easeInQuart, easeOutQuart, easeInOutQuart,
+        easeInQuint, easeOutQuint, easeInOutQuint, easeInSine, easeOutSine, easeInOutSine, easeInExpo, easeOutExpo, easeInOutExpo, easeInCirc, easeOutCirc, easeInOutCirc,
+        easeInBounce, easeOutBounce, easeInOutBounce, easeInBack, easeOutBack, easeInOutBack, easeInElastic, easeOutElastic, easeInOutElastic, easeSpring, easeShake, punch, once, clamp, pingPong, animationCurve
+    }
+
+    public enum LeanProp
+    {
+        position,
+        localPosition,
+        x,
+        y,
+        z,
+        localX,
+        localY,
+        localZ,
+        scale,
+        color
+    }
+
+    /**
+    * LeanTween is an efficient tweening engine for Unity3d<br /><br />
+    * <a href="#index">Index of All Methods</a> | <a href="LTDescr.html">Optional Paramaters that can be passed</a><br /><br />
+    * <strong id='optional'>Optional Parameters</strong> are passed at the end of every method<br />
+    * <br />
+    * <i>Example:</i><br />
+    * LeanTween.moveX( gameObject, 1f, 1f).setEase( <a href="LeanTweenType.html">LeanTweenType</a>.easeInQuad ).setDelay(1f);<br />
+    * <br />
+    * You can pass the optional parameters in any order, and chain on as many as you wish!<br /><br />
+    * You can also modify this tween later, just save the unique id of the tween.<br />
+    * <h4>Example:</h4>
+    * int id = LeanTween.moveX(gameObject, 1f, 1f).id;<br />
+    * <a href="LTDescr.html">LTDescr</a> d = LeanTween.<a href="#method_LeanTween.descr">descr</a>( id );<br /><br />
+    * if(d!=null){ <span style="color:gray">// if the tween has already finished it will return null</span><br />
+    * <span style="color:gray">&#160;&#160; // change some parameters</span><br />
+    * &#160;&#160; d.setOnComplete( onCompleteFunc ).setEase( <a href="LeanTweenType.html">LeanTweenType</a>.easeInOutBack );<br />
+    * }
+    *
+    * @class LeanTween
+    */
+
     public class LeanTween : MonoBehaviour
     {
 
