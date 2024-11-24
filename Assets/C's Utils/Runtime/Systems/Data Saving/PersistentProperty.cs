@@ -61,12 +61,12 @@ namespace CsUtils.Systems.DataSaving
             this.dataID = dataID;
 
             UpdateData(defaultValue);
-            GameData.persistenDataSections[sectionID].onDataUpdated += DataUpdated;
+            GameData.persistentDataSections[sectionID].onDataUpdated += DataUpdated;
         }
 
         ~PersistentProperty()
         {
-            GameData.persistenDataSections[sectionID].onDataUpdated -= DataUpdated;
+            GameData.persistentDataSections[sectionID].onDataUpdated -= DataUpdated;
         }
 
         /// <summary>

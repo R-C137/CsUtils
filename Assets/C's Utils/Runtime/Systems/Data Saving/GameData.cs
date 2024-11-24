@@ -35,6 +35,8 @@
  *      [23/11/2024] - Added support for saving scriptable objects (C137)
  *                   - Fixed TryGet() throwing errors (C137)
  *                   - Added support for data obfuscation (C137)
+ *
+ *      [24/11/2024] - Fixed typo in a field name (C137)
  * 
  */
 
@@ -60,7 +62,7 @@ namespace CsUtils.Systems.DataSaving
         /// <summary>
         /// The actual sections in which data is stored
         /// </summary>
-        public static Dictionary<string, PersistentData> persistenDataSections = new();
+        public static Dictionary<string, PersistentData> persistentDataSections = new();
 
         /// <summary>
         /// The default obfuscator logic to use for all data sections
@@ -72,8 +74,8 @@ namespace CsUtils.Systems.DataSaving
         /// </summary>
         public static event PersistentData.DataUpdated onDataUpdated
         {
-            add => persistenDataSections["default"].onDataUpdated += value;
-            remove => persistenDataSections["default"].onDataUpdated -= value;
+            add => persistentDataSections["default"].onDataUpdated += value;
+            remove => persistentDataSections["default"].onDataUpdated -= value;
         }
 
         void Awake()
@@ -94,12 +96,12 @@ namespace CsUtils.Systems.DataSaving
         void SetupDataSections()
         {
             //Add the base path data saving path as the default one
-            persistenDataSections.Clear();
+            persistentDataSections.Clear();
 
             Singleton.TryGet(out CsSettings csSettings);
             
             if (csSettings != null)
-                persistenDataSections.Add("default", new PersistentData(csSettings.dataSavingFolderPath, dataObfuscator: defaultObfuscator));
+                persistentDataSections.Add("default", new PersistentData(csSettings.dataSavingFilePath, dataObfuscator: defaultObfuscator));
             else
                 StaticUtils.AutoLog("No instance of 'CsSettings' was found. Default path could not be added", LogSeverity.Warning);
 
@@ -112,7 +114,7 @@ namespace CsUtils.Systems.DataSaving
             {
                 IDataObfuscator obfuscator = section.dataObfuscator == null ? defaultObfuscator : section.dataObfuscator;
                 
-                persistenDataSections.Add(section.sectionID, new PersistentData(section.dataPath, dataObfuscator: obfuscator));
+                persistentDataSections.Add(section.sectionID, new PersistentData(section.dataPath, dataObfuscator: obfuscator));
             }
         }
 
@@ -182,7 +184,7 @@ namespace CsUtils.Systems.DataSaving
         /// <returns>The value of the data with the associated id</returns>
         public static T Get<T>(string id, string sectionID = "default", T defaultValue = default)
         {
-            if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+            if (persistentDataSections.TryGetValue(sectionID, out PersistentData section))
                 return section.Get(id, defaultValue);
 
             throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
@@ -198,7 +200,7 @@ namespace CsUtils.Systems.DataSaving
         /// <returns>Whether data with the associated id exists</returns>
         public static bool TryGet<T>(string id, out T value, string sectionID = "default")
         {
-            if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+            if (persistentDataSections.TryGetValue(sectionID, out PersistentData section))
                 return section.TryGet(id, out value);
 
             value = default;
@@ -216,7 +218,7 @@ namespace CsUtils.Systems.DataSaving
         /// <returns>The data that was saved</returns>
         public static T Set<T>(string id, T value, string sectionID = "default")
         {
-            if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+            if (persistentDataSections.TryGetValue(sectionID, out PersistentData section))
                 return section.Set(id, value);
 
             throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
@@ -230,7 +232,7 @@ namespace CsUtils.Systems.DataSaving
         /// <returns>Whether the persistent data exists</returns>
         public static bool Has(string id, string sectionID = "default")
         {
-            if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+            if (persistentDataSections.TryGetValue(sectionID, out PersistentData section))
                 return section.Has(id);
 
             throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
@@ -243,7 +245,7 @@ namespace CsUtils.Systems.DataSaving
         /// <param name="sectionID">The id of the section to remove the persistent data from</param>
         public void Clear(string id, string sectionID = "default")
         {
-            if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+            if (persistentDataSections.TryGetValue(sectionID, out PersistentData section))
                 section.Clear(id);
 
             throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
@@ -255,7 +257,7 @@ namespace CsUtils.Systems.DataSaving
         /// <param name="sectionID">The id of the section whose data should be reset</param>
         public void Clear(string sectionID = "default")
         {
-            if (persistenDataSections.TryGetValue(sectionID, out PersistentData section))
+            if (persistentDataSections.TryGetValue(sectionID, out PersistentData section))
                 section.ClearAll();
 
             throw new ArgumentException("The specified section doesn't exist", nameof(sectionID));
@@ -266,7 +268,7 @@ namespace CsUtils.Systems.DataSaving
         /// </summary>
         public void ClearAll()
         {
-            foreach (var section in persistenDataSections.Values)
+            foreach (var section in persistentDataSections.Values)
             {
                 section.ClearAll();
             }

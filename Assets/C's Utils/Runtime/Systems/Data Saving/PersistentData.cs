@@ -17,6 +17,7 @@
  *                   - Added missing namespace (C137)
  *
  *      [23/11/2024] - Added support for data obfuscation (C137)
+ *      [24/11/2024] - Added methods for getting & settings raw file data (C137)
  */
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -184,6 +185,28 @@ namespace CsUtils.Systems.DataSaving
         }
 
         /// <summary>
+        /// Returns the raw bytes saved to this section
+        /// </summary>
+        /// <param name="fileStream">The filestream to use</param>
+        /// <returns></returns>
+        public byte[] GetRawData(FileStream fileStream = null)
+        {
+            bool closeStream = fileStream == null;
+            
+            fileStream ??= File.Open(dataPath, FileMode.Open, FileAccess.ReadWrite);
+
+            using MemoryStream memoryStream = new ();
+            
+            fileStream.CopyTo(memoryStream);  // Copy all bytes from fileStream to memoryStream
+            
+            if(closeStream)
+                fileStream.Close();
+            
+            return memoryStream.ToArray();    // Convert the memoryStream to byte array
+            
+        }
+        
+        /// <summary>
         /// Loads all of the saved data from disk
         /// </summary>W
         public void LoadData(bool forced = false)
@@ -193,19 +216,10 @@ namespace CsUtils.Systems.DataSaving
 
             using FileStream fs = File.Open(dataPath, FileMode.Open, FileAccess.ReadWrite);
 
-            byte[] obfuscatedJsonData = ReadFileStreamToBytes(fs);
+            byte[] obfuscatedJsonData = GetRawData(fs);
             data = JsonConvert.DeserializeObject<Dictionary<string, object>>(dataObfuscator.DeObfuscate(obfuscatedJsonData));
             
             dataLoaded = true;
-            
-            static byte[] ReadFileStreamToBytes(Stream fileStream)
-            {
-                using (MemoryStream memoryStream = new MemoryStream())
-                {
-                    fileStream.CopyTo(memoryStream);  // Copy all bytes from fileStream to memoryStream
-                    return memoryStream.ToArray();    // Convert the memoryStream to byte array
-                }
-            }
         }
 
         /// <summary>
@@ -213,11 +227,25 @@ namespace CsUtils.Systems.DataSaving
         /// </summary>
         public void SaveData()
         {
-            using FileStream fs = GetDataFileStream();
             string json = JsonConvert.SerializeObject(data);
-            fs.Write(dataObfuscator.Obfuscate(json));
+            SaveRawData(dataObfuscator.Obfuscate(json));
+        }
+
+        /// <summary>
+        /// Saves raw bytes to data of this section
+        /// </summary>
+        /// <param name="saveData">The bytes to save</param>
+        /// <param name="fileStream">The filestream to use</param>
+        public void SaveRawData(byte[] saveData, FileStream fileStream = null)
+        {
+            bool closeStream = fileStream == null;
             
-            return;
+            fileStream ??= GetDataFileStream();
+            
+            fileStream.Write(saveData);
+            
+            if (closeStream)
+                fileStream.Close();
             
             FileStream GetDataFileStream()
             {
