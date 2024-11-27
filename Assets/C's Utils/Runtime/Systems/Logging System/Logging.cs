@@ -462,10 +462,10 @@ namespace CsUtils.Systems.Logging
         /// <returns></returns>
         public virtual string FormatType<T>(T type)
         {
-            if (type is IEnumerable && type is not string)
+            if (type is IEnumerable enumerable and not string)
             {
                 List<object> obj = new();
-                foreach (var item in type as IEnumerable)
+                foreach (var item in enumerable)
                 {
                     obj.Add(item);
                 }
