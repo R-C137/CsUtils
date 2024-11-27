@@ -18,6 +18,8 @@
  *
  *      [23/11/2024] - Added support for data obfuscation (C137)
  *      [24/11/2024] - Added methods for getting & settings raw file data (C137)
+ *      [27/11/2024] - Removed data change checks (C137)
+ * 
  */
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -134,10 +136,6 @@ namespace CsUtils.Systems.DataSaving
         /// <returns>The data that was saved</returns>
         public T Set<T>(string id, T value)
         {
-            //Prevents serializing all of the data unnecessarily
-            if (data.TryGetValue(id, out object previousValue) && previousValue == (object)value)
-                return value;
-
             data[id] = value;
 
             SaveData();

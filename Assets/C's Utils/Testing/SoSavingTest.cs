@@ -1,11 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
 using CsUtils;
 using CsUtils.Systems.DataSaving;
 using UnityEngine;
 
+public class testing
+{
+    public string data = "none";
+}
 public class SoSavingTest : MonoBehaviour
 {
-    public PersistentProperty<ItemBaseTest> so;
+    public PersistentProperty<List<List<testing>>> so;
 
     public ItemBaseTest item;
     
@@ -13,14 +18,18 @@ public class SoSavingTest : MonoBehaviour
     
     private void Start()
     {
-        so = new("testing.so.item", savedItem);
+        so = new("testing.so.item", new());
     }
 
     private void Update()
     {
         if(InputQuery.GetKeyDown(KeyCode.K))
-            so.Value = savedItem;
+        {
+            so.Value.Add(new List<testing>(){ new (){data = "testing data"}});
+            so.UpdateToDisk();
+        }
         if(InputQuery.GetKeyDown(KeyCode.L))
-            savedItem = so.Value;
+        {
+        }
     }
 }
