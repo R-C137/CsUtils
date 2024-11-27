@@ -11,10 +11,13 @@
  * 
  * Changes: 
  *      [04/08/2024] - Initial implementation (C137)
+ *      [27/11/2024] - Support for getting any key of a specific press type (C137)
+ * 
  */
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CsUtils
@@ -59,6 +62,11 @@ namespace CsUtils
         private readonly List<KeyInfo> requiredKeys = new();
         
         /// <summary>
+        /// References to all the keys that any of them are required to be pressed
+        /// </summary>
+        private readonly List<KeyInfo> requiredAnyKeys = new();
+        
+        /// <summary>
         /// Returns true while the user holds down all the required keys
         /// </summary>
         public InputQuery WithKey(params KeyCode[] keys)
@@ -95,6 +103,39 @@ namespace CsUtils
             }
             return this;
         }
+
+        /// <summary>
+        /// Returns true if any of these keys are pressed
+        /// </summary>
+        /// <param name="keys">The possible keys to press</param>
+        public InputQuery WithAnyKey(params KeyCode[] keys)
+        {
+            foreach (KeyCode key in keys)
+                requiredAnyKeys.Add(new KeyInfo(key, PressType.Held));
+            return this;
+        }
+        
+        /// <summary>
+        /// Returns true if any of these keys are released by the user
+        /// </summary>
+        /// <param name="keys">The possible keys to release</param>
+        public InputQuery WithAnyKeyDown(params KeyCode[] keys)
+        {
+            foreach (KeyCode key in keys)
+                requiredAnyKeys.Add(new KeyInfo(key, PressType.Pressed));
+            return this;
+        }
+        
+        /// <summary>
+        /// Returns true if any of these keys are released by the user
+        /// </summary>
+        /// <param name="keys">The possible keys to release</param>
+        public InputQuery WithAnyKeyUp(params KeyCode[] keys)
+        {
+            foreach (KeyCode key in keys)
+                requiredAnyKeys.Add(new KeyInfo(key, PressType.Release));
+            return this;
+        }
         
         /// <summary>
         /// Returns true while the user holds down all the required keys
@@ -115,13 +156,31 @@ namespace CsUtils
         
         /// <summary>
         /// Returns true the frame the user releases all the required keys<br></br>
-        /// May ot be suitable to have multiple keys in that context
+        /// May not be suitable to have multiple keys in that context
         /// </summary>
         public static InputQuery GetKeyUp(params KeyCode[] keys)
         {
             return new InputQuery().WithKeyUp(keys);
         }
 
+        /// <summary>
+        /// Returns true if any of these keys are pressed
+        /// </summary>
+        /// <param name="keys">The possible keys to press</param>
+        public static InputQuery GetAnyKeyDown(params KeyCode[] keys)
+        {
+            return new InputQuery().WithAnyKeyDown(keys);
+        }
+        
+        /// <summary>
+        /// Returns true if any of these keys are released by the user
+        /// </summary>
+        /// <param name="keys">The possible keys to release</param>
+        public static InputQuery GetAnyKeyUp(params KeyCode[] keys)
+        {
+            return new InputQuery().WithAnyKeyUp(keys);
+        }
+        
         /// <summary>
         /// Adds a modifier to the sequence
         /// </summary>
@@ -214,7 +273,7 @@ namespace CsUtils
                     return false;
             }
 
-            return true;
+            return !query.requiredAnyKeys.Any() || query.requiredAnyKeys.Any(IsKeyPressed);
             
             bool IsKeyPressed(KeyInfo keyInfo)
             {
