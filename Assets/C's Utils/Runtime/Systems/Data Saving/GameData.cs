@@ -37,20 +37,23 @@
  *                   - Added support for data obfuscation (C137)
  *
  *      [24/11/2024] - Fixed typo in a field name (C137)
+ *      [27/11/2024] - Support for loading classes & structs (C137)
+ *                   - Fixed saving lists & arrays (C137)
  * 
  */
 
 using CsUtils.Systems.Logging;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 using Unity.Plastic.Newtonsoft.Json;
 using UnityEngine;
 
 namespace CsUtils.Systems.DataSaving
 {
-    
     [UnityEngine.DefaultExecutionOrder(-20), UnityEngine.ExecuteAlways]
     public class GameData : MonoBehaviour
     {
@@ -300,8 +303,36 @@ namespace CsUtils.Systems.DataSaving
                 destination = (T)Convert.ChangeType(scriptableObject, typeof(T));
                 return true;
             }
+
+            if(value is JObject jObject)
+            {
+                destination = jObject.ToObject<T>();
+                return true;
+            }
+            
+            if(value is JArray jArray)
+            {
+                T array = jArray.ToObject<T>();
+
+                // if(array is IEnumerable enumerable)
+                // {
+                //     List<object> values = enumerable.Cast<object>().ToList();
+                //
+                //     for(int i = 0; i < values.Count; i++)
+                //     {
+                //         object obj = values[i];
+                //         FixTypeCasting(obj, out obj);
+                //         
+                //         values[i] = obj;
+                //     }
+                // }
+                
+                destination = array;
+                return true;
+            }
             
             destination = (T)value;
+            
             return false;
         }
 

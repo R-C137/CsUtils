@@ -13,6 +13,8 @@
  * Changes: 
  *      [04/01/2024] - Initial implementation (C137)
  *      [05/01/2024] - Added missing namespace (C137)
+ *      [27/11/2024] - Save data can now be manually loaded & saved (C137)
+ * 
  */
 namespace CsUtils.Systems.DataSaving
 {
@@ -60,7 +62,7 @@ namespace CsUtils.Systems.DataSaving
             this.sectionID = sectionID;
             this.dataID = dataID;
 
-            UpdateData(defaultValue);
+            UpdateFromDisk(defaultValue);
             GameData.persistentDataSections[sectionID].onDataUpdated += DataUpdated;
         }
 
@@ -81,9 +83,24 @@ namespace CsUtils.Systems.DataSaving
         }
 
         /// <summary>
+        /// Updates the data on disk with the provided one
+        /// </summary>
+        /// <param name="value">The data to update the disk with</param>
+        public void UpdateToDisk(T value) => GameData.Set(dataID, value, sectionID);
+        
+        /// <summary>
+        /// Updates the current memory value to disk<br></br>
+        /// Useful when the property is a class.
+        /// </summary>
+        public void UpdateToDisk()
+        {
+            UpdateToDisk(Value);
+        }
+        
+        /// <summary>
         /// Manually updates the cached value of the data
         /// </summary>
-        public void UpdateData(T defaultValue = default)
+        public void UpdateFromDisk(T defaultValue = default)
         {
             _data = GameData.Get(dataID, sectionID, defaultValue);
         }
