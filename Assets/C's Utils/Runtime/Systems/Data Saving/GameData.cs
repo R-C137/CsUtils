@@ -37,6 +37,7 @@
  *                   - Added support for data obfuscation (C137)
  *
  *      [24/11/2024] - Fixed typo in a field name (C137)
+ *      [27/11/2024] - Improved logging of clashing sections (C137)
  * 
  */
 
@@ -129,10 +130,11 @@ namespace CsUtils.Systems.DataSaving
             HashSet<string> currentSectionIds = new();
             HashSet<string> currentDataPaths = new();
 
-            Dictionary<string, DataSectionSo> clashingPaths = new();
-            Dictionary<string, DataSectionSo> clashingIds = new();
+            Dictionary<string, List<string>> clashingPaths = new();
+            Dictionary<string, List<string>> clashingIds = new();
             
-            bool clashed = false;
+            bool iDsClashed = false;
+            bool pathsClashed = false;
             
             foreach (DataSectionSo section in dataSections.Where(d => d != null).ToArray())
             {
@@ -154,24 +156,57 @@ namespace CsUtils.Systems.DataSaving
                         continue;
                     }
 
-                    clashed = true;
-                    clashingIds.Add(section.sectionID, section);
+                    iDsClashed = true;
+                    string sectionID = string.IsNullOrEmpty(section.sectionID) ? section.name : section.sectionID;
+
+                    if(clashingIds.ContainsKey(sectionID))
+                        clashingIds[sectionID].Add(section.dataPath);
+                    
+                    clashingIds.Add(string.IsNullOrEmpty(section.sectionID) ? section.name : section.sectionID, new List<string>{section.sectionID});
                 }
 
                 if(!currentDataPaths.Add(section.dataPath))
                 {
-                    clashed = true;
-                    clashingPaths.Add(section.dataPath, section);
+                    pathsClashed = true;
+
+                    string sectionID = string.IsNullOrEmpty(section.sectionID) ? section.name : section.sectionID;
+
+                    if(clashingPaths.ContainsKey(sectionID))
+                        clashingPaths[sectionID].Add(section.rawDataPath);
+                    
+                    clashingPaths.Add(string.IsNullOrEmpty(section.sectionID) ? section.name : section.sectionID, new List<string>{section.rawDataPath});
                 }
             }
 
-            if(clashed)
+            if(iDsClashed)
             {
-                StaticUtils.AutoLog("Clashing IDs, {0}, were found from, {0}, respectively. The data saving system will not work as intended", LogSeverity.Error, parameters: new object[] { clashingIds.Keys, clashingIds.Values });
-                StaticUtils.AutoLog("Clashing paths, {0}, were found from, {0}, respectively. The data saving system will not work as intended", LogSeverity.Error, parameters: new object[] { clashingPaths.Keys, clashingPaths.Values });
+                List<string> idsDisplay = new();
+
+                foreach (List<string> ids in clashingIds.Values)
+                {
+                    foreach (string id in ids)
+                    {
+                        idsDisplay.Add(id);
+                    }
+                }
+                
+                StaticUtils.AutoLog("Clashing IDs, {0}, were found from, {1}, respectively. The data saving system will not work as intended", LogSeverity.Error, parameters: new object[] { idsDisplay, clashingIds.Keys.ToArray() });
+            }
+            if(pathsClashed)
+            {
+                List<string> pathsDisplay = new();
+
+                foreach (List<string> paths in clashingPaths.Values)
+                {
+                    foreach (string path in paths)
+                    {
+                        pathsDisplay.Add(path);
+                    }
+                }
+                StaticUtils.AutoLog("Clashing paths, {0}, were found from, {1}, respectively. The data saving system will not work as intended", LogSeverity.Error, parameters: new object[] { pathsDisplay, clashingPaths.Keys.ToArray()});
             }
 
-            return clashed;
+            return iDsClashed || pathsClashed;
         }
 
         /// <summary>

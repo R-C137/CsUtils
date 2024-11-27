@@ -136,7 +136,7 @@ namespace CsUtils
 
         /// <summary>
         /// Utility function meant to be used internally to switch between C's logging or Unity's logging depending on whether the former has been setup or not<br></br>
-        /// If Unity's logging is used only the log and context will be passed. No parsing will happen to the log meaning the parameters will not be added
+        /// Only minimal formatting of the log will happen if enabled.
         /// </summary>
         [HideInCallstack]
         public static void AutoLog(object log, LogSeverity severity, UnityEngine.Object context = null, Timestamp timestamp = Timestamp.TimeOnly, bool formatLog = true, bool? showInConsole = null, bool? fileLogging = null, bool? forceStackTrace = null, string stackTrace = null, params object[] parameters)
@@ -144,8 +144,11 @@ namespace CsUtils
             Systems.Logging.ILogger defaultLogger = (Singleton.HasInstance<Logging>() ? Singleton.Get<Logging>() as Systems.Logging.ILogger : null);
             Systems.Logging.ILogger logger = Singleton.HasInstance<CsSettings>() ? (CsSettings.Logger == null ? defaultLogger : CsSettings.Logger) : defaultLogger;
 
+            
             if (logger == null)
             {
+                if(formatLog)
+                    log = string.Format(log.ToString(), parameters);
                 switch (severity)
                 {
                     case LogSeverity.Debug:

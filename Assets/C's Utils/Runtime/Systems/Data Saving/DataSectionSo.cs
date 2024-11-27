@@ -21,6 +21,7 @@
  *                   - Updated field names (C137)
  *
  *      [23/11/2024] - Added support for data obfuscators (C137)
+ *      [27/11/2024] - Data path evaluation is now always performed (C137)
  */
 using System;
 using System.IO;
@@ -34,7 +35,7 @@ namespace CsUtils.Systems.DataSaving
         /// <summary>
         /// The expanded path at which the data for this section will be stored
         /// </summary>
-        public string dataPath => GetDataPath();
+        public string dataPath => Environment.ExpandEnvironmentVariables(Singleton.Get<CsSettings>().ReplaceCustomDefinitions(rawDataPath));
 
         /// <summary>
         /// The identifier with which this section will be accessible
@@ -47,32 +48,12 @@ namespace CsUtils.Systems.DataSaving
         [FormerlySerializedAs("obfuscator")]
         public DataObfuscatorSo dataObfuscator;
         
-        /// <summary>
-        /// The data path, which has been updated with the environment variables and custom definitions.
-        /// </summary>
-        [NonSerialized]
-        private string updatedDataPath = string.Empty;
 
         /// <summary>
         /// The raw, unexpanded data path where data will be stored for this section.
         /// </summary>
         [FormerlySerializedAs("_dataPath"),SerializeField, InspectorName("Data Path")]
-        string rawDataPath;
-
-        string GetDataPath()
-        {
-            if (updatedDataPath != string.Empty)
-                return updatedDataPath;
-
-            return UpdateDataPath();
-        }
-
-        string UpdateDataPath()
-        {
-            updatedDataPath = Environment.ExpandEnvironmentVariables(Singleton.Get<CsSettings>().ReplaceCustomDefinitions(rawDataPath));
-
-            return updatedDataPath;
-        }
+        public string rawDataPath;
 
         private void Reset()
         {
